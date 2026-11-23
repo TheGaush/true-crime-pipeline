@@ -1,0 +1,248 @@
+# Single source of truth for model ids, adapters, and USD rates (Task 001).
+# Packages load this file. They do not hardcode checkpoints or prices.
+# schema_version matches schema/pipeline.sql v4.
+schema_version: 4
+registry_version: 1
+
+runtime:
+  episode_duration_sec: 1200
+  fps: 30
+  narration_sample_rate_hz: 48000
+  splits:
+    code_foia:
+      seconds: 780
+      minutes: 13.0
+      video_usd: 0
+    still_2k_panzoom:
+      seconds: 340
+      minutes: 5.67
+      owner: crime_scene_2k
+      visual_engine: STILL_2K_PANZOOM
+    flow_hero_video:
+      seconds: 80
+      minutes: 1.33
+      visual_engine: FLOW_HERO_VIDEO
+      max_hero_clips: 10
+      max_hero_duration_sec: 80
+
+budgets:
+  currency: USD
+  micro_usd_per_usd: 1000000
+  per_episode_video_base_usd: 8.00
+  per_episode_video_cap_usd: 10.40
+  per_episode_video_cap_micro_usd: 10400000
+  global_monthly_cap_usd: 135.00
+  global_monthly_cap_micro_usd: 135000000
+  live_sandbox_cap_usd: 2.00
+  offline_test_cap_micro_usd: 0
+  offline_test_purpose: OFFLINE_TEST
+  # Ledger rows match schema/pipeline.sql monthly_budget_ledger seed.
+  ledger_providers:
+    - id: ALL_PROVIDERS
+      monthly_cap_usd: 135.00
+      monthly_cap_micro_usd: 135000000
+      seeded_in_schema: true
+    - id: gemini_omni
+      monthly_cap_usd: 104.00
+      monthly_cap_micro_usd: 104000000
+      seeded_in_schema: true
+    - id: gemini_image
+      monthly_cap_usd: 5.00
+      monthly_cap_micro_usd: 5000000
+      seeded_in_schema: true
+    - id: deepseek_chat
+      monthly_cap_usd: 38.00
+      monthly_cap_micro_usd: 38000000
+      seeded_in_schema: true
+      note: Conservative 0% KV-cache ceiling. Cache hits are best-effort, never a guarantee.
+    - id: tts
+      monthly_cap_usd: 5.00
+      monthly_cap_micro_usd: 5000000
+      seeded_in_schema: true
+    - id: vision_qa
+      monthly_cap_usd: 2.00
+      monthly_cap_micro_usd: 2000000
+      seeded_in_schema: true
+    - id: vertex_veo
+      monthly_cap_usd: null
+      monthly_cap_micro_usd: null
+      seeded_in_schema: false
+      interchangeable_with_gemini_omni: false
+      note: Optional adapter. A monthly_budget_ledger row is required before any reservation.
+
+episode_projections_usd:
+  code_foia_video: 0
+  gemini_image:
+    conservative: 0.40
+    best_effort_cached: 0.30
+  gemini_omni:
+    base: 8.00
+    cap: 10.40
+  deepseek_chat:
+    conservative_0pct_cache: [2.80, 3.80]
+    best_effort_cached: [0.75, 1.90]
+  tts_whisperx_vision:
+    conservative: 0.50
+    best_effort_cached: 0.45
+    whisperx_usd: 0
+  ten_episode_month:
+    conservative_0pct_cache: [117, 135]
+    best_effort_cached: [95, 120]
+    hard_cap: 135
+
+video_adapters:
+  - id: GEMINI_OMNI_INTERACTIONS
+    engine_model: gemini-omni-1.2-flash
+    api: gemini-interactions-api
+    default: true
+    sdk: google-genai>=2.30.1
+  - id: VERTEX_VEO_ENTERPRISE
+    engine_model: vertex-veo-enterprise
+    default: false
+    interchangeable_with_default: false
+  - id: HUMAN_BATCH_DESK
+    engine_model: manual-desk-video
+    default: false
+    interchangeable_with_default: false
+    paid_api: false
+
+models:
+  - id: gemini-omni-1.2-flash
+    provider_id: gemini_omni
+    role: primary_video
+    api: gemini-interactions-api
+    sdk: google-genai>=2.30.1
+    resolution: 720p
+    width: 1280
+    height: 720
+    conservative_usd_per_sec: 0.10
+    observed_usd_per_sec_low: 0.07
+    observed_usd_per_sec_high: 0.10
+    video_output_tokens_per_sec_720p: 5792
+    max_hero_clips: 10
+    max_hero_duration_sec: 80
+    prompt_modes:
+      TEXT_TO_VIDEO: { min_sec: 3, max_sec: 15, frames: 0 }
+      FIRST_FRAME: { min_sec: 3, max_sec: 15, frames: 1 }
+      FIRST_AND_LAST_FRAME: { min_sec: 3, max_sec: 10, frames: 2 }
+  - id: vertex-veo-enterprise
+    provider_id: vertex_veo
+    role: optional_video_adapter
+    adapter: VERTEX_VEO_ENTERPRISE
+    interchangeable_with_primary: false
+  - id: manual-desk-video
+    provider_id: vertex_veo
+    role: human_batch_desk
+    adapter: HUMAN_BATCH_DESK
+    interchangeable_with_primary: false
+    usd_per_sec: 0
+  - id: gemini-image-api
+    provider_id: gemini_image
+    role: illustrative_still
+    api: gemini-image-api
+    conservative_usd_per_episode: 0.40
+    best_effort_cached_usd_per_episode: 0.30
+  - id: DeepSeek-V4.1-Flash-1017
+    provider_id: deepseek_chat
+    role: scripting_ledger_manifest
+    alias: DeepSeek-V4.1-Flash
+    cache_hit_guarantee: false
+    conservative_0pct_cache_usd_per_episode: [2.80, 3.80]
+    best_effort_cached_usd_per_episode: [0.75, 1.90]
+  - id: DeepSeek-V4-Pro-0813
+    provider_id: deepseek_chat
+    role: contradiction_reasoning
+    alias: V4-Pro-0813
+  - id: gemini-3.5-flash-lite
+    provider_id: gemini_omni
+    role: youtube_xray
+    contract: youtube-xray@3
+  - id: gemini-3.8-flash
+    provider_id: gemini_omni
+    role: youtube_xray_alternate
+    contract: youtube-xray@3
+  - id: gemini-3.5-flash
+    provider_id: vision_qa
+    role: frame_and_thumbnail_qa
+  - id: gemini-3.8-flash-tts
+    provider_id: tts
+    role: narration_tts
+    output_sample_rate_hz: 24000
+    target_sample_rate_hz: 48000
+    target_lufs: -16.0
+  - id: flash-lite-tts
+    provider_id: tts
+    role: narration_tts_lite
+    output_sample_rate_hz: 24000
+    target_sample_rate_hz: 48000
+    target_lufs: -16.0
+  - id: google-vids-manual-export
+    provider_id: tts
+    role: optional_manual_voiceover
+    paid_api: false
+  - id: deepseek-speech-tts
+    provider_id: tts
+    role: tts_failover
+  - id: whisperx-local
+    provider_id: local
+    role: word_aligner
+    usd_per_minute: 0
+    aligner: phoneme-wav2vec2
+    owns_word_timestamps: true
+  - id: deepseek-speech-to-text
+    provider_id: deepseek_chat
+    role: optional_cloud_asr
+    owns_word_timestamps: false
+    max_bytes: 8388608
+    max_duration_sec: 120
+    pipeline_slice_max_sec: 90
+    pipeline_slice_max_bytes: 4194304
+    sample_rate_hz: 16000
+    channels: 1
+    codec: flac
+  - id: gemini-transcribe
+    provider_id: vision_qa
+    role: optional_cloud_asr
+    owns_word_timestamps: false
+    pipeline_slice_max_sec: 90
+    pipeline_slice_max_bytes: 4194304
+    sample_rate_hz: 16000
+    channels: 1
+    codec: flac
+  - id: grid-grounding-vision@2
+    provider_id: vision_qa
+    role: illustrative_grid_grounding
+    backing_model: DeepSeek-V4.1-Flash-1017
+
+prompt_contracts:
+  - id: alias-expander@1
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: comment-gap-miner@1
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: youtube-xray@3
+    model_id: gemini-3.5-flash-lite
+    alternate_model_id: gemini-3.8-flash
+  - id: evidence-ledger-extractor@3
+    model_id: DeepSeek-V4.1-Flash-1017
+    alternate_model_id: DeepSeek-V4-Pro-0813
+  - id: that-vs-how-linter@1
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: tts-director@1
+    model_id: gemini-3.8-flash-tts
+  - id: scene-planner@1
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: director-manifest@4
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: director-repair@4
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: grid-grounding-vision@2
+    model_id: DeepSeek-V4.1-Flash-1017
+  - id: omni-clip-qa@2
+    model_id: gemini-3.5-flash
+    alternate_model_id: DeepSeek-V4.1-Flash-1017
+  - id: frame-spot-qa@1
+    model_id: gemini-3.5-flash
+    alternate_model_id: DeepSeek-V4.1-Flash-1017
+  - id: thumbnail-auditor@2
+    model_id: gemini-3.5-flash
+    alternate_model_id: DeepSeek-V4.1-Flash-1017

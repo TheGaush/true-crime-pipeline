@@ -1,0 +1,39 @@
+[project]
+name = "true-crime-pipeline"
+version = "0.0.0"
+description = "Hybrid true-crime documentary pipeline. Offline zero-spend tests by default."
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "packages/shared_contracts",
+  "packages/db",
+  "packages/agent1_scout",
+  "packages/agent2_evidence",
+  "packages/agent3_gatekeeper",
+  "packages/voice_sync",
+  "packages/agent4_director",
+  "packages/orchestrator",
+  "packages/python_motion",
+  "packages/crime_scene_2k",
+  "packages/flow_adapter",
+  "packages/agent6_mastering",
+  "packages/analytics_feedback",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["packages", "apps"]
+addopts = "--disable-socket -ra"
+norecursedirs = ["node_modules", ".venv", "venv", "dist", "artifacts", "ready_to_upload"]
+markers = [
+  "live_sandbox: paid provider sockets; requires --live-sandbox and ALLOW_PAID_SANDBOX=1 (Task 200)",
+]

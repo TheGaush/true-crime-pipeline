@@ -1,0 +1,84 @@
+# Global documentary craft only. Not episode research and not a ScenePlan.
+# "interactive" means high-engagement visual curiosity hooks and pacing,
+# not clickable player widgets and not a copy of a competitor script or brand.
+# Model ids and USD rates live in providers.yaml.
+version: 1
+name: documentary-craft-rubric
+line_budget: 150
+
+interactive_means: >
+  High-engagement visual documentary rhythm and viewer curiosity hooks.
+  Not clickable player widgets. Not a copied competitor script, asset, or brand.
+
+inputs:
+  order:
+    - craft_rubric
+    - episode_research
+    - scene_plan
+  this_file_is: pacing and visual clarity principles
+  this_file_is_not:
+    - episode research
+    - a per-scene ScenePlan
+    - a provider rate table
+
+opening_hook:
+  window: "0:00-0:20"
+  requires: one explicit primary-record curiosity question
+  adsense_risk_control: clean opening window
+  monetization_guarantee: false
+
+visual_variation:
+  static_or_2k_beat_max_sec: 6.0
+  macro_engine_switch_before_sec: 50.0
+  hero_motion_exempt_from_6s_cut_clock: true
+  motive: change framing or graphic motif before a static beat goes stale
+
+callouts:
+  safe_zone: css
+  max_words: 12
+  min_seconds_formula: "1.0 + 0.3 * words"
+  must_show:
+    - location
+    - timestamp
+    - action
+  must_cite: fact_ledger ids
+
+plan_gate:
+  stage: PLAN_APPROVED
+  before:
+    - voice lock
+    - paid asset generation
+  required:
+    - story_purpose
+    - intended_audience_effect
+    - approved_narration
+    - visual_concept
+    - expected_output
+    - edit_cues
+    - semantic_acceptance
+  narration_edit: STALE_NEEDS_REAPPROVAL
+
+labels:
+  required_visible:
+    - "TRANSCRIPT DRAMATIZATION"
+    - "ILLUSTRATIVE RECONSTRUCTION — NOT CRIME SCENE PHOTO"
+  illustrative_reconstruction_flag: 1
+
+pacing:
+  remainder_beat_min_sec: 2.5
+  case_board_spine_sec: [210, 270]
+  case_board_spine_boundary_snapped: true
+  cold_open_distinct_from_later_chapters: true
+  title_and_chapter_transitions: explicit
+
+clarity:
+  claim_to_citation: every spoken claim maps to a fact_ledger id
+  acceptance_question: >
+    Does the visual match the approved narration and cited evidence
+    without misleading the viewer?
+  no_competitor_assets: true
+  no_crimson_in_video_start_end_png: "#C92A2A"
+
+ownership:
+  deterministic_13_law_checks: manifest linter, not this file
+  runtime_split_and_prices: providers.yaml
