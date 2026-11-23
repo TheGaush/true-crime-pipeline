@@ -1,0 +1,10 @@
+{
+  "name": "@tc/shared-contracts-ts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "pnpm -w exec tsc -p packages/shared-contracts-ts/tsconfig.json --noEmit",
+    "test": "pnpm -w exec vitest run --config apps/e2e/vitest.config.ts"
+  }
+}

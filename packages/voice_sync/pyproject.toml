@@ -1,0 +1,9 @@
+[project]
+name = "tc-voice-sync"
+version = "0.0.0"
+description = "Empty package shell. Implementation lands in a later task."
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false

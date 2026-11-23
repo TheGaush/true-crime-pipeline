@@ -1,0 +1,19 @@
+{
+  "name": "true-crime-pipeline",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Hybrid true-crime documentary pipeline monorepo. Offline zero-spend tests by default.",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc -p packages/shared-contracts-ts/tsconfig.json --noEmit && tsc -p packages/render_catalog/tsconfig.json --noEmit && tsc -p apps/batch_desk_ui/tsconfig.json --noEmit && tsc -p apps/e2e/tsconfig.json --noEmit",
+    "test": "vitest run --config apps/e2e/vitest.config.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

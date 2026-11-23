@@ -1,0 +1,5 @@
+packages:
+  - "packages/shared-contracts-ts"
+  - "packages/render_catalog"
+  - "apps/batch_desk_ui"
+  - "apps/e2e"

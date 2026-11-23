@@ -1,0 +1,18 @@
+# core.autocrlf=false is set by scripts/agent-worktree.mjs.
+# Line endings stay LF in the repository itself.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.wav binary
+*.mp3 binary
+*.flac binary
+*.mp4 binary
+*.mov binary
+*.zip binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary

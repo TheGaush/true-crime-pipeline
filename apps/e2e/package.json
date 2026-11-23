@@ -1,0 +1,15 @@
+{
+  "name": "@tc/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "pnpm -w exec tsc -p apps/e2e/tsconfig.json --noEmit",
+    "test": "pnpm -w exec vitest run --config apps/e2e/vitest.config.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
