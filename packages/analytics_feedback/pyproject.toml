@@ -1,7 +1,7 @@
 [project]
 name = "tc-analytics-feedback"
 version = "0.0.0"
-description = "Empty Task 001 shell. No business logic."
+description = "Honest YouTube Analytics and Studio CSV ingest."
 requires-python = ">=3.12"
 dependencies = []
 
