@@ -21,3 +21,17 @@ export {
 } from "./parser.js";
 
 export type { EpisodeTimeline, GoldenPackParse, RemotionComposition, SceneBeat } from "./parser.js";
+
+export {
+  CODE_STICKMAN,
+  MVP_MOTIF_IDS,
+  RENDER_REPORT_FILENAME,
+  SCENE_GRADE_MANIFEST_FILENAME,
+  RenderCatalogCliError,
+  cliMain,
+  parseRenderCatalogArgv,
+  runRenderCatalog,
+  toFailure,
+} from "./cli.js";
+
+export type { RenderCatalogArgs, RenderCatalogFailure, RenderCatalogReport, RenderedSceneReport } from "./cli.js";
