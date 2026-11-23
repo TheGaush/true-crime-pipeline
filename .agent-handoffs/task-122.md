@@ -4,7 +4,7 @@
 - Branch: `task/122-motif-redacted-doc-reveal`
 - Worktree: primary clone, branched from `c914ae5` (Tasks 001–004). Sibling `../tc-wt/task-122-motif-redacted-doc-reveal` was not created.
 - Track: Part 2
-- Status: committed on the task branch. A PR to `main` is opened from this branch and must not be merged (`TC-Never-Merge`).
+- Status: committed on the task branch. PR https://github.com/TheGaush/true-crime-pipeline/pull/27 is open against `main` and must not be merged (`TC-Never-Merge`).
 - Owned paths touched:
   - `packages/render_catalog/src/motifs/RedactedDocReveal.tsx`
   - `packages/render_catalog/tests/motifs/redacted_doc_reveal.test.tsx`
