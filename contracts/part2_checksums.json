@@ -1,0 +1,7 @@
+{
+  "note": "SHA-256 of the frozen inputs that ship in this repo. contracts/schemas is not present on this branch.",
+  "files": {
+    "providers.yaml": "e88ae9180b7d30185f3a589cdabb83cf8a7177067fd7bc8b1a0247ec528ee560",
+    "fixtures/golden_pack.schema.json": "5b1bb8386a7432c2d1c2e0f741016c72c2bad86b70660939e1d178b61bccaf7e"
+  }
+}
