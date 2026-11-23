@@ -1,0 +1,16 @@
+[project]
+name = "tc-desk-api"
+version = "0.0.0"
+description = "Loopback FastAPI bridge. The only writer of pipeline.db."
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115", "uvicorn>=0.32"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["desk_api"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
