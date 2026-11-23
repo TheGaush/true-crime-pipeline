@@ -1,9 +1,13 @@
 [project]
 name = "tc-crime-scene-2k"
 version = "0.0.0"
-description = "Empty Task 001 shell. No business logic."
+description = "2K still tours driven by pre-locked spatial anchors."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "numpy>=1.26",
+  "opencv-python-headless>=4.9",
+  "pillow>=10",
+]
 
 [build-system]
 requires = ["hatchling"]
