@@ -4,7 +4,7 @@
 - Branch: `task/125-motif-alibi-split-screen`
 - Worktree: branch `task/125-motif-alibi-split-screen` (primary clone; sibling `../tc-wt/` worktree was not created)
 - Track: Part 2
-- Status: committed on the task branch and opened as a PR to `main`. Not merged.
+- Status: committed on the task branch. PR https://github.com/TheGaush/true-crime-pipeline/pull/29 to `main`. Not merged.
 - Owned paths touched: `packages/render_catalog/src/motifs/AlibiSplitScreen.tsx`, `packages/render_catalog/tests/motifs/alibi_split_screen.test.tsx`, `.agent-handoffs/task-125.md`
 - Dependencies added: none. Task 110 and Task 114 were not imported. Their files were not copied. `packages/render_catalog/package.json` is outside this task.
 - Verification: `pnpm --filter @tc/render_catalog typecheck` passed. Alibi split vitest: 7 passed. See the command below. `pnpm --filter @tc/render_catalog test -- alibi_split_screen` exits 0 and prints nothing, because the Task 001 shell has no `test` script.
