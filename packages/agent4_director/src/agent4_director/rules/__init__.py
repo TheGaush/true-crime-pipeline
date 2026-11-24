@@ -1,1 +1,1 @@
-"""Deterministic director law validators."""
+"""Deterministic manifest lint rules for Agent 4."""
