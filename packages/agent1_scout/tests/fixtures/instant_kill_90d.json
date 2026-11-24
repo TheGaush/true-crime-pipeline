@@ -1,0 +1,35 @@
+{
+  "as_of": "2026-11-23",
+  "videos": [
+    {
+      "video_id": "five-day-600k",
+      "age_days": 5,
+      "views": 600000,
+      "tier1": false
+    },
+    {
+      "video_id": "forty-day-250k",
+      "age_days": 40,
+      "views": 250000,
+      "tier1": false
+    },
+    {
+      "video_id": "ninety-day-200001",
+      "age_days": 90,
+      "views": 200001,
+      "tier1": false
+    },
+    {
+      "video_id": "ten-day-200000",
+      "age_days": 10,
+      "views": 200000,
+      "tier1": false
+    },
+    {
+      "video_id": "ninety-one-day-900k",
+      "age_days": 91,
+      "views": 900000,
+      "tier1": false
+    }
+  ]
+}

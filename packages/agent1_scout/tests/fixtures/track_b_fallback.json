@@ -1,0 +1,53 @@
+{
+  "track_a": [
+    {
+      "candidate_id": "a-600k",
+      "views": 600000,
+      "age_days": 5,
+      "title": "Five day outlier"
+    },
+    {
+      "candidate_id": "a-250k",
+      "views": 210000,
+      "age_days": 30,
+      "title": "Month-old outlier"
+    },
+    {
+      "candidate_id": "a-border",
+      "views": 200001,
+      "age_days": 90,
+      "title": "Edge of the 90-day window"
+    }
+  ],
+  "track_b": [
+    {
+      "candidate_id": "foia-completed",
+      "track": "TRACK_B_FOIA_RADAR",
+      "source": "muckrock",
+      "disposition": "COMPLETED",
+      "substantive": true,
+      "defendant": "Ada Roe",
+      "incident_year": "2019",
+      "docket_ids": ["2019-CR-44"]
+    },
+    {
+      "candidate_id": "foia-denial-only",
+      "track": "TRACK_B_FOIA_RADAR",
+      "source": "muckrock",
+      "disposition": "DENIED",
+      "substantive": false,
+      "files": []
+    },
+    {
+      "candidate_id": "cl-affirmed",
+      "track": "TRACK_B_FOIA_RADAR",
+      "source": "courtlistener",
+      "disposition": "AFFIRMED",
+      "substantive": true,
+      "word_count": 4200,
+      "defendant": "Ben Cole",
+      "incident_year": "2018",
+      "docket_ids": ["2018-CR-9"]
+    }
+  ]
+}

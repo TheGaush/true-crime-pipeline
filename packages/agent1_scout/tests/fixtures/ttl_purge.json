@@ -1,0 +1,34 @@
+{
+  "as_of": "2026-11-23",
+  "records": [
+    {
+      "record_id": "stale-payload",
+      "created_on": "2026-10-22",
+      "yt_ttl_expires_at": "2026-11-21",
+      "status": "CANDIDATE",
+      "track": "TRACK_A_OUTLIER",
+      "raw_yt_payload_json": {"videoId": "stale-payload", "title": "raw api row"},
+      "views_count": 88000,
+      "outlier_ratio": 4.2,
+      "seed_packet_json": {
+        "yt_title": "CHOPPED UP IN BASEMENT?!",
+        "yt_description": "raw description excerpt",
+        "docket_ids": ["2019-CR-44"]
+      }
+    },
+    {
+      "record_id": "fresh-payload",
+      "created_on": "2026-11-13",
+      "yt_ttl_expires_at": "2026-12-13",
+      "status": "CANDIDATE",
+      "track": "TRACK_A_OUTLIER",
+      "raw_yt_payload_json": {"videoId": "fresh-payload"},
+      "views_count": 48000,
+      "outlier_ratio": 3.6,
+      "seed_packet_json": {
+        "yt_title": "What the affidavit leaves open",
+        "docket_ids": ["2018-CR-9"]
+      }
+    }
+  ]
+}

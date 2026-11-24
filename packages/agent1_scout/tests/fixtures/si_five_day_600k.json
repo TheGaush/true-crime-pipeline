@@ -1,0 +1,12 @@
+{
+  "as_of": "2026-11-23",
+  "videos": [
+    {
+      "video_id": "five-day-600k",
+      "age_days": 5,
+      "views": 600000,
+      "tier1": false,
+      "title": "County affidavit timeline"
+    }
+  ]
+}

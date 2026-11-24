@@ -1,0 +1,18 @@
+{
+  "video_id": "age-gated-1",
+  "playback": "PLAYBACK_RESTRICTED",
+  "age_restricted": true,
+  "metadata": {
+    "title": "Maricopa docket recap",
+    "description": "Docket 2019-CR-44, Ada Roe, Maricopa County, Arizona.",
+    "tags": ["docket", "maricopa"]
+  },
+  "comments": [
+    "Which docket number was affirmed?"
+  ],
+  "captions_download": {
+    "method": "captions.download",
+    "caption_id": "cap-do-not-fetch"
+  },
+  "mp4_url": "https://example.invalid/age-gated-1.mp4"
+}
