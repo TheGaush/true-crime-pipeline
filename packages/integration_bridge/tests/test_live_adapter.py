@@ -15,7 +15,12 @@ def test_stub_and_live_share_the_protocol_and_one_writer(tmp_path: Path):
     assert live["safety_passed"] is True
     assert live["start_frame"] is None
     assert live["sfx_hz"] == 48000
-    assert len(LivePart2RenderAdapter().supported_motifs()) == 12
+    motifs = LivePart2RenderAdapter().supported_motifs()
+    assert len(motifs) == 14
+    assert motifs[:4] == ("StickmanStage", "AudioEvidenceCard", "RedactedDocReveal", "FoiaFootageFrame")
+    assert "AnimatedMapRoute" in motifs
+    for outside in ("SmsPhoneThread", "MapRouteTrace", "AlibiSplitScreen", "EvidenceMatchCard", "CustomDiagramScene"):
+        assert outside not in motifs
     db = tmp_path / "pipeline.db"
     first = open_locked(str(db))
     second = open_locked(str(db))
