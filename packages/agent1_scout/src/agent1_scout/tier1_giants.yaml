@@ -1,0 +1,45 @@
+# Default Tier-1 true-crime giant registry (offline, no network).
+# Match by canonical YouTube channelId and/or normalized channel title.
+giants:
+  - key: ewu
+    titles:
+      - EWU
+      - EWU Criminal Psychology
+      - Exploring With U
+    channel_ids:
+      - UCewuTier1Fixture01
+  - key: jcs
+    titles:
+      - JCS
+      - JCS - Criminal Psychology
+    channel_ids:
+      - UCjcsTier1Fixture01
+  - key: that_chapter
+    titles:
+      - That Chapter
+    channel_ids:
+      - UCthatChapterFixture01
+  - key: cbs_48_hours
+    titles:
+      - 48 Hours
+      - CBS 48 Hours
+    channel_ids:
+      - UC48HoursFixture01
+  - key: dateline
+    titles:
+      - Dateline NBC
+      - Dateline
+    channel_ids:
+      - UCDatelineFixture01
+  - key: abc_2020
+    titles:
+      - 20/20
+      - ABC 20/20
+    channel_ids:
+      - UC2020Fixture01
+  - key: law_and_crime
+    titles:
+      - Law&Crime
+      - Law & Crime Network
+    channel_ids:
+      - UCLawCrimeFixture01
