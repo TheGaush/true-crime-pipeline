@@ -1,0 +1,11 @@
+{
+  "fixture_kind": "courtlistener_opinion_detail",
+  "live_http": false,
+  "opinion": {
+    "id": "1042001",
+    "case_name": "State v. Hale",
+    "docket_number": "2019-CR-1042",
+    "absolute_url": "https://www.courtlistener.com/opinion/1042001/state-v-hale/",
+    "html_with_citations": "<article class=\"opinion\"><h2>Opinion of the Court</h2><p>We affirm the district court. The jury heard credible testimony that Hale was last seen near the porch light described in the affidavit at 2204 hours on April 3, 2018. The forensic match discussed below was properly admitted at trial (p. 12, para. 3).</p><p>The defendant argues insufficiency of the evidence. Viewing the record in the light most favorable to the State, a rational trier of fact could find each element beyond a reasonable doubt (pp. 14-15, para. 2).</p><h2>Concurring Opinion</h2><p>I join the majority's disposition and write separately only to emphasize that the trial court's limiting instruction cured any risk of prejudice from the neighbor's hearsay summary (p. 18, para. 1).</p><h2>Dissenting Opinion</h2><p>I respectfully dissent. The majority speculates that the porch-light timestamp alone establishes presence at the scene; I would hold the State failed to prove identity without independent corroboration (p. 22, para. 4). This alternative theory should not be treated as the holding of this court.</p></article>"
+  }
+}
