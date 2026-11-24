@@ -1,0 +1,10 @@
+{
+  "fact_id": "fact-shell-casing",
+  "plate_path": "plate_mock.png",
+  "grounding": {
+    "grid_cell": "D4",
+    "span_cols": 2.0,
+    "span_rows": 1.0,
+    "target_zoom": 3.2
+  }
+}

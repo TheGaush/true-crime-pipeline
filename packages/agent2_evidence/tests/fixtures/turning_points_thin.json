@@ -1,0 +1,14 @@
+{
+  "candidates": [
+    {
+      "beat_id": "beat-1",
+      "summary": "The alibi timeline collapsed after the warehouse keycard swipe.",
+      "source_type": "court_ruling"
+    },
+    {
+      "beat_id": "beat-2",
+      "summary": "Forensics matched shell casings from two separate rooms.",
+      "source_type": "police_affidavit"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "calls_used": 60,
+  "pending_calls": 5,
+  "cached_doc_ids": ["doc_cached_1", "doc_cached_2"],
+  "queue_doc_ids": ["doc_pending_3", "doc_pending_4", "doc_pending_5", "doc_pending_6", "doc_pending_7"]
+}

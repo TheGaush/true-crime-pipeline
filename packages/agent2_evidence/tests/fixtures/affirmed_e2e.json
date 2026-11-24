@@ -1,0 +1,83 @@
+{
+  "case_id": "case_hale",
+  "suspect_names": ["Morgan Hale"],
+  "incident_year": 2014,
+  "docket_ids": ["2014-CR-100"],
+  "defendant_name": "Morgan Hale",
+  "courtlistener": [
+    {
+      "suspect_names": ["Morgan Hale"],
+      "incident_year": 2014,
+      "docket_id": "2014-CR-100",
+      "disposition": "AFFIRMED"
+    }
+  ],
+  "state_doc": [
+    {
+      "suspect_names": ["Morgan Hale"],
+      "incident_year": 2014,
+      "docket_id": "2014-CR-100",
+      "conviction_standing": true,
+      "disposition": "AFFIRMED"
+    }
+  ],
+  "gov": [
+    {
+      "suspect_names": ["Morgan Hale"],
+      "incident_year": 2014,
+      "docket_id": "2014-CR-100",
+      "source_url": "https://doc.example.gov/releases/2014-cr-100"
+    }
+  ],
+  "harvest": {
+    "calls_used": 10,
+    "pending_calls": 3,
+    "cached_doc_ids": ["opinion_majority"],
+    "queue_doc_ids": ["docket_sheet", "appendix_a", "appendix_b"]
+  },
+  "news_html": "<p>Initial reporting said a neighbor saw a truck.</p><img src=\"mugshot.jpg\" />",
+  "ledger_text": "Witness Jane Doe saw a truck. Defendant Morgan Hale was identified in court.",
+  "unconvicted_names": ["Jane Doe"],
+  "conflict_groups": [
+    {
+      "topic": "timeline",
+      "claims": [
+        {
+          "source_type": "court_ruling",
+          "event_summary": "The court fixed the warehouse arrival at 9:40 PM."
+        },
+        {
+          "source_type": "news_report",
+          "event_summary": "Rumors claimed the defendant was out of state."
+        }
+      ]
+    }
+  ],
+  "turning_point_candidates": [
+    {
+      "beat_id": "tp-1",
+      "summary": "The appellate court affirmed the homicide count.",
+      "source_type": "court_ruling"
+    },
+    {
+      "beat_id": "tp-2",
+      "summary": "Keycard data undermined the alibi.",
+      "source_type": "police_affidavit"
+    },
+    {
+      "beat_id": "tp-3",
+      "summary": "Forensic shell casings matched across two rooms.",
+      "source_type": "court_ruling"
+    }
+  ],
+  "early_2k": {
+    "fact_id": "fact-warehouse",
+    "plate_path": "plate_mock.png",
+    "grounding": {
+      "grid_cell": "C5",
+      "span_cols": 1.0,
+      "span_rows": 1.0,
+      "target_zoom": 2.4
+    }
+  }
+}
