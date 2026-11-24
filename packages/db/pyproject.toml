@@ -1,21 +1,12 @@
 [project]
-name = "pipeline-db"
-version = "0.0.1"
-description = "Python sole-writer SQLite WAL driver for pipeline.db"
-requires-python = ">=3.12"
-dependencies = []
+name = "true-crime-pipeline-db"
+version = "0.0.0"
+description = "SQLite bootstrap and migration runner (Task 006)"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
-
-[build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-package-dir = {"db" = "src"}
-packages = ["db"]
+dev = ["pytest>=8.0"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-p no:cacheprovider"
