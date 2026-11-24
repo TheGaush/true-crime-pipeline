@@ -1,6 +1,6 @@
-"""Python mirror of schema/schema-test.js (pipeline.db v4 + telemetry.db).
+"""Python mirror of schema/schema-test.js (pipeline.db v5 + telemetry.db).
 
-Twelve pytest scenarios, grouped exactly like the Node script. Named statements
+Sixteen pytest scenarios, grouped exactly like the Node script. Named statements
 come from schema/queries.sql `-- name:` blocks. The SQL files are the authority;
 this module does not rewrite them.
 
@@ -231,11 +231,17 @@ def test_01_telemetry_cached_input_tokens_strict() -> None:
         tdb.close()
 
 
-def test_02_lookup_tables_seed_v4_metadata() -> None:
-    """2. schema v4, gemini-omni-1.2-flash, whisperx-local, $0 offline cap, 4 MVP motifs."""
+def test_02_lookup_tables_seed_v5_metadata() -> None:
+    """2. schema v5, gemini-omni-1.2-flash, whisperx-local, $0 offline cap, 4 MVP motifs."""
     db = setup_db()
     try:
-        assert db.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()["value"] == "4"
+        assert db.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()["value"] == "5"
+        assert (
+            db.execute(
+                "SELECT value FROM meta WHERE key='live_sandbox_lifetime_cap_micro_usd'"
+            ).fetchone()["value"]
+            == "2000000"
+        )
         assert (
             db.execute("SELECT value FROM meta WHERE key='primary_video_model'").fetchone()["value"]
             == "gemini-omni-1.2-flash"
@@ -379,6 +385,14 @@ def test_04_scene_plan_stale_on_edit_and_five_gate_release() -> None:
         )
         db.execute(
             "UPDATE episodes SET timeline_validated_sha256 = 'sha_tl_2' WHERE episode_id = 'ep_1'"
+        )
+        db.execute(
+            """INSERT INTO qa_reports VALUES
+               ('qa_1','ep_1',-14.0,-1.5,1,1,'PASSED',1,'final.mp4','sha_mp4',4000)"""
+        )
+        db.execute(
+            """INSERT INTO compliance_audits VALUES
+               ('aud_1','case_1',1,1,1,1,1,1,4000)"""
         )
         db.execute("UPDATE episodes SET state = 'READY_TO_UPLOAD' WHERE episode_id = 'ep_1'")
         assert (
@@ -638,14 +652,26 @@ def test_10_youtube_purge_and_adsense_unknown() -> None:
                    )"""
             )
         db.execute(
+            """INSERT INTO channels_watchlist (
+                 channel_id, uploads_playlist_id, channel_name, subscriber_count,
+                 median_20_views, yt_ttl_expires_at
+               ) VALUES ('UCkeep','UUkeep','Crime Channel',50000,10000,2000)"""
+        )
+        db.execute(
             """INSERT INTO outlier_candidates (
-                 candidate_id, track, source_video_id, views_count, outlier_ratio,
+                 candidate_id, track, source_video_id, source_channel_id, views_count, outlier_ratio,
                  saturation_index, seed_packet_json, raw_yt_payload_json, yt_ttl_expires_at,
                  status, created_at
                ) VALUES (
-                 'c_ok','TRACK_A_OUTLIER','v1',50000,10.0,20,'{"yt_title":"x"}','{"raw":1}',2000,
+                 'c_ok','TRACK_A_OUTLIER','v1','UCkeep',50000,10.0,20,'{"yt_title":"x"}','{"raw":1}',2000,
                  'GREENLIT',1000
                )"""
+        )
+        db.execute(
+            """INSERT INTO saturation_checks (
+                 check_id, candidate_id, phase, aliases_json, n_mega_excl, n_recent_excl,
+                 n_14d_wave, si_score, checked_at
+               ) VALUES ('chk_1','c_ok','SCOUTING','["alias"]',2,3,1,40,1500)"""
         )
         db.execute(extract_query("purge_expired_yt_api_records"), _bind({":now_ms": 2500}))
         purged = db.execute(
@@ -655,8 +681,19 @@ def test_10_youtube_purge_and_adsense_unknown() -> None:
         assert purged["views_count"] is None
         assert purged["raw_yt_payload_json"] is None
         assert purged["status"] == "EXPIRED_TOS_PURGED"
+        assert (
+            db.execute("SELECT aliases_json FROM saturation_checks WHERE check_id='chk_1'").fetchone()[
+                "aliases_json"
+            ]
+            == "[]"
+        )
+        channel = db.execute(
+            "SELECT channel_name, subscriber_count FROM channels_watchlist WHERE channel_id='UCkeep'"
+        ).fetchone()
+        assert channel["channel_name"] == ""
+        assert channel["subscriber_count"] == 0
 
-        seed_approved_case_and_episode(db, "PUBLISHED")
+        seed_approved_case_and_episode(db, "MASTERED")
         db.execute(
             """INSERT INTO episode_analytics (
                  snapshot_id, episode_id, days_since_publish, watch_hours_total, captured_at
@@ -735,5 +772,277 @@ def test_12_quota_daily_limit_and_news_hedging() -> None:
                 """INSERT INTO fact_ledger
                    VALUES ('f1','case_1','2023-11-04T22:00:00Z','Suspect seen','[]','Route 9','news_report','doc_1','p.1',0,'[]')"""
             )
+    finally:
+        db.close()
+
+
+def test_13_settlement_and_live_sandbox_caps() -> None:
+    """13. Positive spend cannot be released, offline actuals stay $0, sandbox retries share a $2 cap."""
+    db = setup_db()
+    try:
+        seed_approved_case_and_episode(db, "AWAITING_FLOW_BATCH")
+        reserve = extract_query("reserve_provider_budget")
+        settle = extract_query("settle_provider_budget")
+        query_get(
+            db,
+            reserve,
+            {
+                ":reservation_id": "r_rel",
+                ":episode_id": "ep_1",
+                ":job_id": "job_rel",
+                ":attempt_number": 1,
+                ":provider_id": "tts",
+                ":purpose": "PRODUCTION",
+                ":year_month": "2026-11",
+                ":estimated_micro_usd": 1000,
+                ":now_ms": 1000,
+            },
+        )
+        with pytest.raises(sqlite3.Error, match="BUDGET_SETTLEMENT_BLOCKED"):
+            query_get(
+                db,
+                settle,
+                {
+                    ":reservation_id": "r_rel",
+                    ":actual_micro_usd": 1000,
+                    ":final_status": "RELEASED",
+                    ":now_ms": 1100,
+                },
+            )
+        query_get(
+            db,
+            settle,
+            {
+                ":reservation_id": "r_rel",
+                ":actual_micro_usd": 1000,
+                ":final_status": "COMMITTED",
+                ":now_ms": 1100,
+            },
+        )
+        query_get(
+            db,
+            reserve,
+            {
+                ":reservation_id": "r_off",
+                ":episode_id": "ep_1",
+                ":job_id": "job_off",
+                ":attempt_number": 1,
+                ":provider_id": "tts",
+                ":purpose": "OFFLINE_TEST",
+                ":year_month": "2026-11",
+                ":estimated_micro_usd": 0,
+                ":now_ms": 1200,
+            },
+        )
+        with pytest.raises(sqlite3.Error, match="BUDGET_SETTLEMENT_BLOCKED"):
+            query_get(
+                db,
+                settle,
+                {
+                    ":reservation_id": "r_off",
+                    ":actual_micro_usd": 1,
+                    ":final_status": "COMMITTED",
+                    ":now_ms": 1300,
+                },
+            )
+        query_get(
+            db,
+            reserve,
+            {
+                ":reservation_id": "r_sb1",
+                ":episode_id": "ep_1",
+                ":job_id": "job_sb",
+                ":attempt_number": 1,
+                ":provider_id": "gemini_omni",
+                ":purpose": "LIVE_SANDBOX",
+                ":year_month": "2026-11",
+                ":estimated_micro_usd": 1_500_000,
+                ":now_ms": 1400,
+            },
+        )
+        with pytest.raises(sqlite3.Error, match="LIVE_SANDBOX_CAP_EXCEEDED"):
+            query_get(
+                db,
+                reserve,
+                {
+                    ":reservation_id": "r_sb2",
+                    ":episode_id": "ep_1",
+                    ":job_id": "job_sb",
+                    ":attempt_number": 2,
+                    ":provider_id": "gemini_omni",
+                    ":purpose": "LIVE_SANDBOX",
+                    ":year_month": "2026-11",
+                    ":estimated_micro_usd": 600_000,
+                    ":now_ms": 1500,
+                },
+            )
+    finally:
+        db.close()
+
+
+def test_14_hero_clip_count_and_duration_are_cumulative() -> None:
+    """14. Hero clip count and duration are enforced across inserts and updates."""
+    db = setup_db()
+    try:
+        seed_approved_case_and_episode(db, "AWAITING_FLOW_BATCH")
+        db.execute(
+            "UPDATE episodes SET max_hero_clips = 1, max_hero_duration_sec = 10 WHERE episode_id = 'ep_1'"
+        )
+        insert_approved_scene_plan_and_scene(db, "s1", 1, "FLOW_HERO_VIDEO", "HeroVideoBridge", 0, 8000)
+        insert_approved_scene_plan_and_scene(db, "s2", 2, "FLOW_HERO_VIDEO", "HeroVideoBridge", 8000, 16000)
+        db.execute(
+            """INSERT INTO flow_jobs (
+                 flow_job_id, episode_id, scene_id, idempotency_key, prompt_mode, duration_bucket_sec,
+                 start_frame_png, end_frame_png, prompt_v1, prompt_v2_safe, fallback_spec_json, state, updated_at
+               ) VALUES (
+                 'fj1','ep_1','s1','idem_h1','TEXT_TO_VIDEO',8,NULL,NULL,'p','p2','{}','PENDING',1000
+               )"""
+        )
+        with pytest.raises(sqlite3.Error, match="HERO_CAP_EXCEEDED"):
+            db.execute(
+                """INSERT INTO flow_jobs (
+                     flow_job_id, episode_id, scene_id, idempotency_key, prompt_mode, duration_bucket_sec,
+                     start_frame_png, end_frame_png, prompt_v1, prompt_v2_safe, fallback_spec_json, state, updated_at
+                   ) VALUES (
+                     'fj2','ep_1','s2','idem_h2','TEXT_TO_VIDEO',4,NULL,NULL,'p','p2','{}','PENDING',1001
+                   )"""
+            )
+        db.execute(
+            "UPDATE episodes SET max_hero_clips = 2, max_hero_duration_sec = 12 WHERE episode_id = 'ep_1'"
+        )
+        db.execute(
+            """INSERT INTO flow_jobs (
+                 flow_job_id, episode_id, scene_id, idempotency_key, prompt_mode, duration_bucket_sec,
+                 start_frame_png, end_frame_png, prompt_v1, prompt_v2_safe, fallback_spec_json, state, updated_at
+               ) VALUES (
+                 'fj2','ep_1','s2','idem_h2','TEXT_TO_VIDEO',4,NULL,NULL,'p','p2','{}','PENDING',1001
+               )"""
+        )
+        with pytest.raises(sqlite3.Error, match="HERO_CAP_EXCEEDED"):
+            db.execute("UPDATE flow_jobs SET duration_bucket_sec = 8 WHERE flow_job_id = 'fj2'")
+    finally:
+        db.close()
+
+
+def test_15_release_insert_and_qa_demotion() -> None:
+    """15. A releasable state cannot be inserted, and a failing QA demotes a ready episode."""
+    db = setup_db()
+    try:
+        db.execute(
+            """INSERT INTO cases (
+                 case_id, defendant_name, incident_year, jurisdiction, docket_id,
+                 primary_record_verified, verification_source, disposition_status,
+                 conviction_confirmed, anonymization_status, anonymized_by, anonymized_at,
+                 anonymization_artifact_sha256, created_at, updated_at
+               ) VALUES (
+                 'case_pub','John Doe',2023,'Mercer, NJ','DK-9',1,'courtlistener','AFFIRMED',1,
+                 'APPROVED','reviewer_a',1000,'sha_anon_1',1000,1000
+               )"""
+        )
+        with pytest.raises(sqlite3.Error, match="RELEASE_GATE_BLOCKED"):
+            db.execute(
+                """INSERT INTO episodes (
+                     episode_id, case_id, state, flow_backend_mode, cold_open_archetype,
+                     total_master_ms, timeline_validated_sha256, ready_bundle_sha256,
+                     updated_at, created_at
+                   ) VALUES (
+                     'ep_pub','case_pub','PUBLISHED','GEMINI_OMNI_INTERACTIONS','911_CALL_IN_MEDIA_RES',
+                     1200000,'sha_tl_1','sha_bundle_1',1000,1000
+                   )"""
+            )
+        seed_approved_case_and_episode(db, "MASTERED")
+        insert_approved_scene_plan_and_scene(db)
+        gates = [
+            "FACTUAL_ACCURACY",
+            "PRIVACY_PII",
+            "SOURCE_RIGHTS",
+            "SYNTHETIC_DISCLOSURE",
+            "ILLUSTRATIVE_LABELING",
+        ]
+        for idx, gate in enumerate(gates):
+            db.execute(
+                """INSERT INTO release_approvals
+                   VALUES (?, 'ep_1', ?, 'sha_bundle_1', 'APPROVED', 'editor_jane', 2000, 'verified')""",
+                (f"rel_{idx}", gate),
+            )
+        db.execute(
+            """INSERT INTO qa_reports VALUES
+               ('qa_rel','ep_1',-14.0,-1.5,1,1,'PASSED',1,'final.mp4','sha_mp4',4000)"""
+        )
+        db.execute(
+            """INSERT INTO compliance_audits VALUES
+               ('aud_rel','case_1',1,1,1,1,1,1,4000)"""
+        )
+        db.execute("UPDATE cases SET primary_record_verified = 0 WHERE case_id = 'case_1'")
+        with pytest.raises(sqlite3.Error, match="RELEASE_GATE_BLOCKED"):
+            db.execute("UPDATE episodes SET state = 'READY_TO_UPLOAD' WHERE episode_id = 'ep_1'")
+        db.execute("UPDATE cases SET primary_record_verified = 1 WHERE case_id = 'case_1'")
+        db.execute("UPDATE episodes SET state = 'READY_TO_UPLOAD' WHERE episode_id = 'ep_1'")
+        db.execute(
+            """UPDATE qa_reports
+               SET vision_frame_qa_status = 'PENDING_MANUAL_SPOT_CHECK'
+               WHERE qa_id = 'qa_rel'"""
+        )
+        assert (
+            db.execute("SELECT state FROM episodes WHERE episode_id = 'ep_1'").fetchone()["state"]
+            == "PENDING_HUMAN_SIGNOFF"
+        )
+    finally:
+        db.close()
+
+
+def test_16_quota_reset_and_idempotent_refund() -> None:
+    """16. Negative quota units do nothing, reset is explicit, and a refund id cannot be reused."""
+    db = setup_db()
+    try:
+        consume = extract_query("consume_quota_bucket")
+        assert query_get(db, consume, {":bucket_name": "yt_search", ":units": -5}) is None
+        assert (
+            db.execute(
+                "SELECT used_today FROM quota_buckets WHERE bucket_name = 'yt_search'"
+            ).fetchone()["used_today"]
+            == 0
+        )
+        query_get(db, consume, {":bucket_name": "yt_search", ":units": 10})
+        reset = extract_query("reset_quota_window")
+        assert query_get(db, reset, {":bucket_name": "yt_search", ":now_ms": 86_400_000})["used_today"] == 0
+        db.execute(
+            """UPDATE google_accounts
+               SET next_daily_reset_utc_ms = 9000000000, daily_credits_left = 10
+               WHERE account_id = 'acct_1'"""
+        )
+        refund = extract_query("refund_daily_account_credits")
+        query_get(
+            db,
+            refund,
+            {
+                ":refund_id": "rf_1",
+                ":account_id": "acct_1",
+                ":reservation_id": "res_1",
+                ":credits": 5,
+                ":now_ms": 1000,
+            },
+        )
+        after = db.execute(
+            "SELECT daily_credits_left FROM google_accounts WHERE account_id = 'acct_1'"
+        ).fetchone()["daily_credits_left"]
+        with pytest.raises(sqlite3.Error):
+            query_get(
+                db,
+                refund,
+                {
+                    ":refund_id": "rf_1",
+                    ":account_id": "acct_1",
+                    ":reservation_id": "res_1",
+                    ":credits": 5,
+                    ":now_ms": 1001,
+                },
+            )
+        assert (
+            db.execute(
+                "SELECT daily_credits_left FROM google_accounts WHERE account_id = 'acct_1'"
+            ).fetchone()["daily_credits_left"]
+            == after
+        )
     finally:
         db.close()
