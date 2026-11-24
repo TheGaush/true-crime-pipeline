@@ -31,6 +31,22 @@ members = [
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-p zero_spend_guard --import-mode=importlib"
-pythonpath = ["scripts"]
+pythonpath = [
+  "scripts",
+  "packages/shared_contracts/src",
+  "packages/db/src",
+  "packages/agent1_scout/src",
+  "packages/agent2_evidence/src",
+  "packages/agent3_gatekeeper/src",
+  "packages/voice_sync/src",
+  "packages/agent4_director/src",
+  "packages/orchestrator/src",
+  "packages/python_motion/src",
+  "packages/crime_scene_2k/src",
+  "packages/flow_adapter/src",
+  "packages/agent6_mastering/src",
+  "packages/analytics_feedback/src",
+  "packages/integration_bridge/src",
+]
 testpaths = ["scripts", "packages", "apps"]
 norecursedirs = ["node_modules", ".venv", "dist", "artifacts", "ready_to_upload"]

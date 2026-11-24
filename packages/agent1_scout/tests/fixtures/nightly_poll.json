@@ -1,0 +1,36 @@
+{
+  "channels": [
+    {
+      "channel_id": "UCsmall001",
+      "uploads_playlist_id": "UUsmall001",
+      "subscriber_count": 18000,
+      "playlist_items": [
+        {"video_id": "vid-long-affidavit"},
+        {"video_id": "vid-short-clip"}
+      ]
+    }
+  ],
+  "video_details": {
+    "vid-long-affidavit": {
+      "video_id": "vid-long-affidavit",
+      "duration_sec": 845,
+      "views": 42000,
+      "title": "What the 2019 Maricopa affidavit still leaves open"
+    },
+    "vid-short-clip": {
+      "video_id": "vid-short-clip",
+      "duration_sec": 42,
+      "views": 900000,
+      "title": "#shorts hallway clip"
+    }
+  },
+  "search_list_trap": {
+    "method": "search.list",
+    "items": [
+      {
+        "video_id": "vid-search-trap",
+        "title": "This id is reachable only through search.list"
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "suspect_names": ["Morgan Hale"],
+  "incident_year": 2014,
+  "docket_ids": ["2014-CR-100"],
+  "courtlistener": [
+    {
+      "suspect_names": ["Morgan Hale"],
+      "incident_year": 2014,
+      "docket_id": "2014-CR-100",
+      "disposition": "AFFIRMED"
+    }
+  ],
+  "state_doc": [
+    {
+      "suspect_names": ["Morgan Hale"],
+      "incident_year": 2014,
+      "docket_id": "2014-CR-100",
+      "conviction_standing": true,
+      "disposition": "AFFIRMED"
+    }
+  ],
+  "gov": [
+    {
+      "suspect_names": ["Morgan Hale"],
+      "incident_year": 2014,
+      "docket_id": "2014-CR-100",
+      "source_url": "https://doc.example.gov/releases/2014-cr-100"
+    }
+  ]
+}

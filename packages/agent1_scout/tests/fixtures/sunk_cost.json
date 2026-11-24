@@ -1,0 +1,24 @@
+{
+  "scenarios": [
+    {
+      "scenario_id": "day2_wave_20pct",
+      "shift_day": 2,
+      "spent_credits_pct": 0.2,
+      "n_14d_wave": 6,
+      "tier1_hit": false
+    },
+    {
+      "scenario_id": "sunk_75pct_four_copycats",
+      "shift_day": 3,
+      "spent_credits_pct": 0.75,
+      "n_14d_wave": 4,
+      "tier1_hit": false,
+      "copycats": [
+        {"video_id": "cc1", "channel_tier": "small", "views": 30000},
+        {"video_id": "cc2", "channel_tier": "small", "views": 28000},
+        {"video_id": "cc3", "channel_tier": "small", "views": 41000},
+        {"video_id": "cc4", "channel_tier": "small", "views": 22000}
+      ]
+    }
+  ]
+}

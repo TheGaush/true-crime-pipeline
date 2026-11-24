@@ -1,0 +1,30 @@
+{
+  "groups": [
+    {
+      "topic": "suspect_location",
+      "claims": [
+        {
+          "source_type": "court_ruling",
+          "event_summary": "The court found the defendant was at the warehouse at 9:40 PM."
+        },
+        {
+          "source_type": "police_affidavit",
+          "event_summary": "Affidavit placed the suspect at a diner at 9:40 PM."
+        },
+        {
+          "source_type": "news_report",
+          "event_summary": "Tabloid rumor placed the suspect overseas at 9:40 PM."
+        }
+      ]
+    },
+    {
+      "topic": "shell_casing",
+      "claims": [
+        {
+          "source_type": "news_report",
+          "event_summary": "A blogger claimed a second shooter fired from the alley."
+        }
+      ]
+    }
+  ]
+}

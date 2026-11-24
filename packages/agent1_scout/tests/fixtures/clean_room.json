@@ -1,0 +1,11 @@
+{
+  "transcript": "CREATOR COLD OPEN: They never saw the hallway camera. This narration is not a lookup key and must not survive the clean-room step.",
+  "leads": {
+    "suspect_names": ["Ada Roe"],
+    "victim_names": ["Ben Cole"],
+    "incident_date_or_year": "2019",
+    "county_state": "Maricopa County, AZ",
+    "docket_ids": ["2019-CR-44"],
+    "unanswered_comment_questions": ["Which exhibit number matched the timeline?"]
+  }
+}

@@ -1,16 +1,22 @@
 [project]
-name = "tc-db"
-version = "0.0.0"
-description = "Empty Task 001 shell. No business logic."
-requires-python = ">=3.12"
-dependencies = []
+name = "pipeline-db"
+version = "0.0.1"
+description = "Config-driven telemetry.db cost and cache-hit logger"
+requires-python = ">=3.11"
+dependencies = ["pyyaml"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
+[tool.setuptools]
+package-dir = {"db" = "src"}
 packages = ["db"]
 
-[tool.hatch.build.targets.wheel.sources]
-"src" = ""
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-p no:cacheprovider"

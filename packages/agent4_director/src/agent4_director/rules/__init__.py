@@ -1,0 +1,1 @@
+"""Deterministic manifest linter rules for Agent 4."""
