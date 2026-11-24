@@ -1,9 +1,16 @@
 [project]
 name = "tc-orchestrator"
 version = "0.0.0"
-description = "Empty Task 001 shell. No business logic."
+description = "Orchestrator conveyor, CLI, and budget guardrails."
 requires-python = ">=3.12"
 dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [build-system]
 requires = ["hatchling"]
