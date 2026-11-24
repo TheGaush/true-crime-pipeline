@@ -1,17 +1,37 @@
-"""SQLite repositories for the true-crime pipeline."""
+"""True-crime pipeline database repositories."""
 
-from .quota_repo import (
-    MissingYouTubeTtlError,
-    QuotaConsumeResult,
-    QuotaRejected,
-    QuotaTracker,
-    pacific_window_start_ms,
+from accounts_repo import (
+    DAILY_CREDITS_CAP,
+    DAILY_RESET_OFFSET_MS,
+    MONTHLY_CREDITS_CAP,
+    AccountCreditSnapshot,
+    AccountPoolLedger,
+    CreditPool,
+    DailyCreditsLockedError,
+    DailyLockStatus,
+    InsufficientCreditsError,
+    ReserveOutcome,
+    extract_named_query,
+    load_named_query,
 )
 
+try:
+    from connection import PipelineDb
+except ImportError:  # Task 005 may not be merged yet
+    PipelineDb = None  # type: ignore[misc, assignment]
+
 __all__ = [
-    "MissingYouTubeTtlError",
-    "QuotaConsumeResult",
-    "QuotaRejected",
-    "QuotaTracker",
-    "pacific_window_start_ms",
+    "DAILY_CREDITS_CAP",
+    "DAILY_RESET_OFFSET_MS",
+    "MONTHLY_CREDITS_CAP",
+    "AccountCreditSnapshot",
+    "AccountPoolLedger",
+    "CreditPool",
+    "DailyCreditsLockedError",
+    "DailyLockStatus",
+    "InsufficientCreditsError",
+    "PipelineDb",
+    "ReserveOutcome",
+    "extract_named_query",
+    "load_named_query",
 ]

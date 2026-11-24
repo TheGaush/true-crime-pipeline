@@ -1,23 +1,19 @@
 [project]
 name = "tc-db"
 version = "0.1.0"
-description = "SQLite repositories for the true-crime documentary pipeline."
-requires-python = ">=3.11"
-dependencies = []
+description = "SQLite repositories for the true-crime documentary pipeline"
+requires-python = ">=3.12"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
-py-modules = ["quota_repo"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = ["tests"]
+pythonpath = ["src"]
