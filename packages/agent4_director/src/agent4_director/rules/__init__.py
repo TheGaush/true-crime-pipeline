@@ -1,1 +1,1 @@
-"""Deterministic director manifest rules and laws."""
+"""Deterministic director law validators."""
