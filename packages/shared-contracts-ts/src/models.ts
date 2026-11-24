@@ -627,14 +627,14 @@ export const ReadyToUploadPack = z
     true_peak_dbtp: z.number(),
     lufs_passed: z.literal(true),
     safe_zone_passed: z.literal(true),
-    vision_frame_qa_status: z.enum(["PASSED", "PENDING_MANUAL_SPOT_CHECK"]),
+    vision_frame_qa_status: z.literal("PASSED"),
     thumbnail_brand_passed: z.literal(true),
     thumbnail_relpaths: z.array(z.string()).min(1).max(3),
     chapters_relpath: z.literal("chapters.txt"),
     youtube_synthetic_disclosure_required: z.boolean(),
     provenance_bundle_relpath: z.literal("provenance_bundle.json"),
     qa_certificate_relpath: z.literal("qa_certificate.json"),
-    human_review_flags: z.array(z.string()).default([]),
+    human_review_flags: z.array(z.string()).max(0).default([]),
     approved_release_gates: z.array(z.enum(RELEASE_GATES)).length(5),
   })
   .strict()
@@ -644,6 +644,10 @@ export const ReadyToUploadPack = z
       if (unsafePath(rel) || !rel.endsWith(".png")) issue(ctx, "thumbnail_relpaths must be safe png files");
     }
     if (value.true_peak_dbtp > -1) issue(ctx, "true_peak_dbtp must be <= -1.0");
+    if (value.integrated_lufs < -14.5 || value.integrated_lufs > -13.5) {
+      issue(ctx, "integrated_lufs must stay within 0.5 of -14.0");
+    }
+    if (value.human_review_flags.length > 0) issue(ctx, "human_review_flags must be empty before upload");
     if (value.approved_release_gates.join("|") !== RELEASE_GATES.join("|")) {
       issue(ctx, "approved_release_gates must be the five release gates in order");
     }

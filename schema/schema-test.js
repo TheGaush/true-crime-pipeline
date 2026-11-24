@@ -1,4 +1,4 @@
-// Executable SQLite schema verification suite (v4) using built-in node:sqlite
+// Executable SQLite schema verification suite (v5) using built-in node:sqlite
 // Verifies SQL invariants across F-01..F-22 & second-pass audit findings (offline schema tests only).
 // Run: node schema/schema-test.js
 
@@ -81,9 +81,10 @@ const scenarios = [
     tdb.close();
   }],
 
-  ['2. Lookup tables seed v4 metadata, WhisperX aligner, $135 global cap, 18 states, authoritative 4-motif MVP', () => {
+  ['2. Lookup tables seed schema v5, WhisperX aligner, $135 global cap, 18 states, authoritative 4-motif MVP', () => {
     const db = setupDb();
-    assert.equal(db.prepare("SELECT value FROM meta WHERE key='schema_version'").get().value, '4');
+    assert.equal(db.prepare("SELECT value FROM meta WHERE key='schema_version'").get().value, '5');
+    assert.equal(db.prepare("SELECT value FROM meta WHERE key='live_sandbox_lifetime_cap_micro_usd'").get().value, '2000000');
     assert.equal(db.prepare("SELECT value FROM meta WHERE key='primary_video_model'").get().value, 'gemini-omni-1.2-flash');
     assert.equal(db.prepare("SELECT value FROM meta WHERE key='primary_word_aligner'").get().value, 'whisperx-local');
     assert.equal(db.prepare("SELECT value FROM meta WHERE key='offline_test_spend_cap_micro_usd'").get().value, '0');
@@ -149,6 +150,8 @@ const scenarios = [
     // Re-approve plan & revalidate timeline -> now release succeeds!
     db.prepare(`UPDATE scene_plans SET asset_version_sha256 = 'sha_asset_2', plan_status = 'EDITED_APPROVED', reviewed_by = 'editor_jane', reviewed_at = 3500 WHERE scene_plan_id = ?`).run(spId);
     db.prepare(`UPDATE episodes SET timeline_validated_sha256 = 'sha_tl_2' WHERE episode_id = 'ep_1'`).run();
+    db.prepare(`INSERT INTO qa_reports VALUES ('qa_1','ep_1',-14.0,-1.5,1,1,'PASSED',1,'final.mp4','sha_mp4',4000)`).run();
+    db.prepare(`INSERT INTO compliance_audits VALUES ('aud_1','case_1',1,1,1,1,1,1,4000)`).run();
     db.prepare(`UPDATE episodes SET state = 'READY_TO_UPLOAD' WHERE episode_id = 'ep_1'`).run();
     assert.equal(db.prepare(`SELECT state FROM episodes WHERE episode_id = 'ep_1'`).get().state, 'READY_TO_UPLOAD');
     db.close();
@@ -255,15 +258,24 @@ const scenarios = [
       db.prepare(`INSERT INTO outlier_candidates (candidate_id,track,source_video_id,views_count,outlier_ratio,saturation_index,seed_packet_json,raw_yt_payload_json,yt_ttl_expires_at,status,created_at)
                   VALUES ('c_bad','TRACK_A_OUTLIER','v1',50000,10.0,20,'{}','{"raw":1}',NULL,'CANDIDATE',1000)`).run();
     });
-    db.prepare(`INSERT INTO outlier_candidates (candidate_id,track,source_video_id,views_count,outlier_ratio,saturation_index,seed_packet_json,raw_yt_payload_json,yt_ttl_expires_at,status,created_at)
-                VALUES ('c_ok','TRACK_A_OUTLIER','v1',50000,10.0,20,'{"yt_title":"x"}','{"raw":1}',2000,'GREENLIT',1000)`).run();
+    db.prepare(`INSERT INTO channels_watchlist (channel_id, uploads_playlist_id, channel_name, subscriber_count, median_20_views, yt_ttl_expires_at)
+                VALUES ('UCkeep','UUkeep','Crime Channel',50000,10000,2000)`).run();
+    db.prepare(`INSERT INTO outlier_candidates (candidate_id,track,source_video_id,source_channel_id,views_count,outlier_ratio,saturation_index,seed_packet_json,raw_yt_payload_json,yt_ttl_expires_at,status,created_at)
+                VALUES ('c_ok','TRACK_A_OUTLIER','v1','UCkeep',50000,10.0,20,'{"yt_title":"x"}','{"raw":1}',2000,'GREENLIT',1000)`).run();
+    db.prepare(`INSERT INTO saturation_checks (check_id, candidate_id, phase, aliases_json, n_mega_excl, n_recent_excl, n_14d_wave, si_score, checked_at)
+                VALUES ('chk_1','c_ok','SCOUTING','["alias"]',2,3,1,40,1500)`).run();
     db.prepare(extractQuery('purge_expired_yt_api_records')).run({ ':now_ms': 2500 });
-    const purged = db.prepare(`SELECT views_count, outlier_ratio, raw_yt_payload_json, status FROM outlier_candidates WHERE candidate_id='c_ok'`).get();
+    const purged = db.prepare(`SELECT views_count, outlier_ratio, raw_yt_payload_json, source_video_id, saturation_index, status FROM outlier_candidates WHERE candidate_id='c_ok'`).get();
     assert.equal(purged.views_count, null);
     assert.equal(purged.raw_yt_payload_json, null);
+    assert.equal(purged.source_video_id, null);
+    assert.equal(purged.saturation_index, 0);
     assert.equal(purged.status, 'EXPIRED_TOS_PURGED');
+    assert.equal(db.prepare(`SELECT aliases_json FROM saturation_checks WHERE check_id='chk_1'`).get().aliases_json, '[]');
+    assert.equal(db.prepare(`SELECT channel_name, subscriber_count, yt_api_purged_at FROM channels_watchlist WHERE channel_id='UCkeep'`).get().channel_name, '');
+    assert.equal(db.prepare(`SELECT subscriber_count FROM channels_watchlist WHERE channel_id='UCkeep'`).get().subscriber_count, 0);
 
-    seedApprovedCaseAndEpisode(db, 'PUBLISHED');
+    seedApprovedCaseAndEpisode(db, 'MASTERED');
     db.prepare(`INSERT INTO episode_analytics (snapshot_id,episode_id,days_since_publish,watch_hours_total,captured_at)
                 VALUES ('an_1','ep_1',2,180.5,5000)`).run();
     const an = db.prepare(`SELECT adsense_status, adsense_source, ctr_pct FROM episode_analytics WHERE snapshot_id='an_1'`).get();
@@ -297,6 +309,125 @@ const scenarios = [
     assert.throws(() => {
       db.prepare(`INSERT INTO fact_ledger VALUES ('f1','case_1','2023-11-04T22:00:00Z','Suspect seen','[]','Route 9','news_report','doc_1','p.1',0,'[]')`).run();
     }, /RULE_09/);
+    db.close();
+  }],
+
+  ['13. Settlement cannot release a positive charge or bill an offline test, and $2 sandbox is cumulative', () => {
+    const db = setupDb();
+    seedApprovedCaseAndEpisode(db, 'AWAITING_FLOW_BATCH');
+    const reserve = db.prepare(extractQuery('reserve_provider_budget'));
+    const settle = db.prepare(extractQuery('settle_provider_budget'));
+    reserve.get({
+      ':reservation_id': 'r_rel', ':episode_id': 'ep_1', ':job_id': 'job_rel', ':attempt_number': 1,
+      ':provider_id': 'tts', ':purpose': 'PRODUCTION', ':year_month': '2026-11',
+      ':estimated_micro_usd': 1000, ':now_ms': 1000
+    });
+    assert.throws(() => {
+      settle.get({
+        ':reservation_id': 'r_rel', ':actual_micro_usd': 1000, ':final_status': 'RELEASED', ':now_ms': 1100
+      });
+    }, /BUDGET_SETTLEMENT_BLOCKED/);
+    settle.get({
+      ':reservation_id': 'r_rel', ':actual_micro_usd': 1000, ':final_status': 'COMMITTED', ':now_ms': 1100
+    });
+
+    reserve.get({
+      ':reservation_id': 'r_off', ':episode_id': 'ep_1', ':job_id': 'job_off', ':attempt_number': 1,
+      ':provider_id': 'tts', ':purpose': 'OFFLINE_TEST', ':year_month': '2026-11',
+      ':estimated_micro_usd': 0, ':now_ms': 1200
+    });
+    assert.throws(() => {
+      settle.get({
+        ':reservation_id': 'r_off', ':actual_micro_usd': 1, ':final_status': 'COMMITTED', ':now_ms': 1300
+      });
+    }, /BUDGET_SETTLEMENT_BLOCKED/);
+
+    reserve.get({
+      ':reservation_id': 'r_sb1', ':episode_id': 'ep_1', ':job_id': 'job_sb', ':attempt_number': 1,
+      ':provider_id': 'gemini_omni', ':purpose': 'LIVE_SANDBOX', ':year_month': '2026-11',
+      ':estimated_micro_usd': 1500000, ':now_ms': 1400
+    });
+    assert.throws(() => {
+      reserve.get({
+        ':reservation_id': 'r_sb2', ':episode_id': 'ep_1', ':job_id': 'job_sb', ':attempt_number': 2,
+        ':provider_id': 'gemini_omni', ':purpose': 'LIVE_SANDBOX', ':year_month': '2026-11',
+        ':estimated_micro_usd': 600000, ':now_ms': 1500
+      });
+    }, /LIVE_SANDBOX_CAP_EXCEEDED/);
+    db.close();
+  }],
+
+  ['14. Hero clip count and duration are cumulative, including a later duration update', () => {
+    const db = setupDb();
+    seedApprovedCaseAndEpisode(db, 'AWAITING_FLOW_BATCH');
+    db.prepare(`UPDATE episodes SET max_hero_clips = 1, max_hero_duration_sec = 10 WHERE episode_id = 'ep_1'`).run();
+    insertApprovedScenePlanAndScene(db, 's1', 1, 'FLOW_HERO_VIDEO', 'HeroVideoBridge', 0, 8000);
+    insertApprovedScenePlanAndScene(db, 's2', 2, 'FLOW_HERO_VIDEO', 'HeroVideoBridge', 8000, 16000);
+    db.prepare(`INSERT INTO flow_jobs (
+      flow_job_id, episode_id, scene_id, idempotency_key, prompt_mode, duration_bucket_sec,
+      start_frame_png, end_frame_png, prompt_v1, prompt_v2_safe, fallback_spec_json, state, updated_at
+    ) VALUES ('fj1','ep_1','s1','idem_h1','TEXT_TO_VIDEO',8,NULL,NULL,'p','p2','{}','PENDING',1000)`).run();
+    assert.throws(() => {
+      db.prepare(`INSERT INTO flow_jobs (
+        flow_job_id, episode_id, scene_id, idempotency_key, prompt_mode, duration_bucket_sec,
+        start_frame_png, end_frame_png, prompt_v1, prompt_v2_safe, fallback_spec_json, state, updated_at
+      ) VALUES ('fj2','ep_1','s2','idem_h2','TEXT_TO_VIDEO',4,NULL,NULL,'p','p2','{}','PENDING',1001)`).run();
+    }, /HERO_CAP_EXCEEDED/);
+    db.prepare(`UPDATE episodes SET max_hero_clips = 2, max_hero_duration_sec = 12 WHERE episode_id = 'ep_1'`).run();
+    db.prepare(`INSERT INTO flow_jobs (
+      flow_job_id, episode_id, scene_id, idempotency_key, prompt_mode, duration_bucket_sec,
+      start_frame_png, end_frame_png, prompt_v1, prompt_v2_safe, fallback_spec_json, state, updated_at
+    ) VALUES ('fj2','ep_1','s2','idem_h2','TEXT_TO_VIDEO',4,NULL,NULL,'p','p2','{}','PENDING',1001)`).run();
+    assert.throws(() => {
+      db.prepare(`UPDATE flow_jobs SET duration_bucket_sec = 8 WHERE flow_job_id = 'fj2'`).run();
+    }, /HERO_CAP_EXCEEDED/);
+    db.close();
+  }],
+
+  ['15. Release insert is gated, and bundle or QA changes demote a ready episode', () => {
+    const db = setupDb();
+    db.prepare(`INSERT INTO cases (case_id, defendant_name, incident_year, jurisdiction, docket_id, primary_record_verified, verification_source, disposition_status, conviction_confirmed, anonymization_status, anonymized_by, anonymized_at, anonymization_artifact_sha256, created_at, updated_at)
+      VALUES ('case_pub','John Doe',2023,'Mercer, NJ','DK-9',1,'courtlistener','AFFIRMED',1,'APPROVED','reviewer_a',1000,'sha_anon_1',1000,1000)`).run();
+    assert.throws(() => {
+      db.prepare(`INSERT INTO episodes (episode_id, case_id, state, flow_backend_mode, cold_open_archetype, total_master_ms, timeline_validated_sha256, ready_bundle_sha256, updated_at, created_at)
+        VALUES ('ep_pub','case_pub','PUBLISHED','GEMINI_OMNI_INTERACTIONS','911_CALL_IN_MEDIA_RES',1200000,'sha_tl_1','sha_bundle_1',1000,1000)`).run();
+    }, /RELEASE_GATE_BLOCKED/);
+    seedApprovedCaseAndEpisode(db, 'MASTERED');
+    insertApprovedScenePlanAndScene(db);
+    const gates = ['FACTUAL_ACCURACY', 'PRIVACY_PII', 'SOURCE_RIGHTS', 'SYNTHETIC_DISCLOSURE', 'ILLUSTRATIVE_LABELING'];
+    gates.forEach((g, idx) => {
+      db.prepare(`INSERT INTO release_approvals VALUES (?, 'ep_1', ?, 'sha_bundle_1', 'APPROVED', 'editor_jane', 2000, 'verified')`).run(`rel_${idx}`, g);
+    });
+    db.prepare(`INSERT INTO qa_reports VALUES ('qa_rel','ep_1',-14.0,-1.5,1,1,'PASSED',1,'final.mp4','sha_mp4',4000)`).run();
+    db.prepare(`INSERT INTO compliance_audits VALUES ('aud_rel','case_1',1,1,1,1,1,1,4000)`).run();
+    db.prepare(`UPDATE cases SET primary_record_verified = 0 WHERE case_id = 'case_1'`).run();
+    assert.throws(() => {
+      db.prepare(`UPDATE episodes SET state = 'READY_TO_UPLOAD' WHERE episode_id = 'ep_1'`).run();
+    }, /RELEASE_GATE_BLOCKED/);
+    db.prepare(`UPDATE cases SET primary_record_verified = 1 WHERE case_id = 'case_1'`).run();
+    db.prepare(`UPDATE episodes SET state = 'READY_TO_UPLOAD' WHERE episode_id = 'ep_1'`).run();
+    db.prepare(`UPDATE qa_reports SET vision_frame_qa_status = 'PENDING_MANUAL_SPOT_CHECK' WHERE qa_id = 'qa_rel'`).run();
+    assert.equal(db.prepare(`SELECT state FROM episodes WHERE episode_id = 'ep_1'`).get().state, 'PENDING_HUMAN_SIGNOFF');
+    db.close();
+  }],
+
+  ['16. Quota rejects negative units and allows an explicit window reset; refunds are idempotent', () => {
+    const db = setupDb();
+    const consume = db.prepare(extractQuery('consume_quota_bucket'));
+    assert.equal(consume.get({ ':bucket_name': 'yt_search', ':units': -5 }), undefined);
+    assert.equal(db.prepare(`SELECT used_today FROM quota_buckets WHERE bucket_name = 'yt_search'`).get().used_today, 0);
+    consume.get({ ':bucket_name': 'yt_search', ':units': 10 });
+    const reset = db.prepare(extractQuery('reset_quota_window'));
+    assert.equal(reset.get({ ':bucket_name': 'yt_search', ':now_ms': 86_400_000 }).used_today, 0);
+
+    db.prepare(`UPDATE google_accounts SET next_daily_reset_utc_ms = 9000000000, daily_credits_left = 10 WHERE account_id = 'acct_1'`).run();
+    const refund = db.prepare(extractQuery('refund_daily_account_credits'));
+    refund.get({ ':refund_id': 'rf_1', ':account_id': 'acct_1', ':reservation_id': 'res_1', ':credits': 5, ':now_ms': 1000 });
+    const after = db.prepare(`SELECT daily_credits_left FROM google_accounts WHERE account_id = 'acct_1'`).get().daily_credits_left;
+    assert.throws(() => {
+      refund.get({ ':refund_id': 'rf_1', ':account_id': 'acct_1', ':reservation_id': 'res_1', ':credits': 5, ':now_ms': 1001 });
+    });
+    assert.equal(db.prepare(`SELECT daily_credits_left FROM google_accounts WHERE account_id = 'acct_1'`).get().daily_credits_left, after);
     db.close();
   }],
 ];

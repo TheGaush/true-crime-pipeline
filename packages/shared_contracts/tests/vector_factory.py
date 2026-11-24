@@ -511,14 +511,14 @@ def ready_valid() -> list[dict[str, Any]]:
             "true_peak_dbtp": -1.2 if index % 2 == 0 else -1.5,
             "lufs_passed": True,
             "safe_zone_passed": True,
-            "vision_frame_qa_status": "PASSED" if index != 3 else "PENDING_MANUAL_SPOT_CHECK",
+            "vision_frame_qa_status": "PASSED",
             "thumbnail_brand_passed": True,
             "thumbnail_relpaths": [f"thumbnails/variant_{index}.png"],
             "chapters_relpath": "chapters.txt",
             "youtube_synthetic_disclosure_required": index % 2 == 0,
             "provenance_bundle_relpath": "provenance_bundle.json",
             "qa_certificate_relpath": "qa_certificate.json",
-            "human_review_flags": [] if index != 4 else ["spot-check the title card"],
+            "human_review_flags": [],
             "approved_release_gates": list(RELEASE_GATES),
         }
         rows.append(_entry("ReadyToUploadPack", index, payload))

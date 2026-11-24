@@ -3023,7 +3023,7 @@
         "true_peak_dbtp": -1.5,
         "lufs_passed": true,
         "safe_zone_passed": true,
-        "vision_frame_qa_status": "PENDING_MANUAL_SPOT_CHECK",
+        "vision_frame_qa_status": "PASSED",
         "thumbnail_brand_passed": true,
         "thumbnail_relpaths": [
           "thumbnails/variant_3.png"
@@ -3053,7 +3053,7 @@
         "true_peak_dbtp": -1.5,
         "lufs_passed": true,
         "safe_zone_passed": true,
-        "vision_frame_qa_status": "PENDING_MANUAL_SPOT_CHECK",
+        "vision_frame_qa_status": "PASSED",
         "thumbnail_brand_passed": true,
         "thumbnail_relpaths": [
           "thumbnails/variant_3.png"
@@ -3096,9 +3096,7 @@
         "youtube_synthetic_disclosure_required": true,
         "provenance_bundle_relpath": "provenance_bundle.json",
         "qa_certificate_relpath": "qa_certificate.json",
-        "human_review_flags": [
-          "spot-check the title card"
-        ],
+        "human_review_flags": [],
         "approved_release_gates": [
           "FACTUAL_ACCURACY",
           "PRIVACY_PII",
@@ -3128,9 +3126,7 @@
         "youtube_synthetic_disclosure_required": true,
         "provenance_bundle_relpath": "provenance_bundle.json",
         "qa_certificate_relpath": "qa_certificate.json",
-        "human_review_flags": [
-          "spot-check the title card"
-        ],
+        "human_review_flags": [],
         "approved_release_gates": [
           "FACTUAL_ACCURACY",
           "PRIVACY_PII",

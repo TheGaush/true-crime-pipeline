@@ -1,4 +1,6 @@
-# Roadmap: Offline Verification First, Plan->Voice->Create->Edit, Then Bounded Live Check (v4)
+# Roadmap: Offline Verification First, Plan->Voice->Create->Edit, Then Bounded Live Check (v5)
+
+The M0 row below is the v4 freeze from Tasks 001–004. Schema v5, on `contract/v5-spend-release-retention`, adds settlement, live-sandbox, hero-cap, release, YouTube purge, and quota/refund checks in SQL. `node schema/schema-test.js` is **16/16**. Existing v4 databases upgrade through [schema/MIGRATION_0005.md](schema/MIGRATION_0005.md).
 
 This project is built by **two developers working in parallel** (`Part 1` and `Part 2`) under **100% offline zero-spend transport mocks (`F-01`)**, organized in **dependency-ordered merge waves (`F-07`)**, with a **minimal end-to-end offline vertical slice (`M0.5`)** right after M0 Contract Freeze, and a **single bounded (`<= $2.00`) opt-in live connectivity check strictly post-integration** (`Task 200`, `F-01`, `F-17`).
 

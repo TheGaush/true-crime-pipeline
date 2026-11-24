@@ -1,4 +1,4 @@
--- Canonical SQL Statements for pipeline.db (v4)
+-- Canonical SQL Statements for pipeline.db (v5)
 
 -- name: due_watchlist_channels
 SELECT channel_id, uploads_playlist_id, median_20_views, yt_ttl_expires_at
@@ -10,10 +10,20 @@ ORDER BY last_polled_at ASC
 LIMIT :limit;
 
 -- name: purge_expired_yt_api_records
+-- Clears YouTube API fields on the candidate. trg_yt_purge_related then clears
+-- saturation_checks and the linked channels_watchlist API fields.
 UPDATE outlier_candidates
 SET raw_yt_payload_json = NULL,
     views_count = NULL,
     outlier_ratio = NULL,
+    source_video_id = NULL,
+    source_channel_id = NULL,
+    saturation_index = 0,
+    n_mega_excl = 0,
+    n_recent_excl = 0,
+    n_14d_excl = 0,
+    has_90d_200k_kill = 0,
+    composite_score = 0,
     seed_packet_json = '{}',
     yt_data_purged_at = :now_ms,
     status = CASE WHEN status = 'CONSUMED' THEN 'CONSUMED' ELSE 'EXPIRED_TOS_PURGED' END
@@ -21,12 +31,36 @@ WHERE track = 'TRACK_A_OUTLIER'
   AND yt_ttl_expires_at <= :now_ms
   AND yt_data_purged_at IS NULL;
 
+-- name: purge_expired_yt_channels
+-- Channels with no remaining candidate still lose API fields when their own TTL expires.
+UPDATE channels_watchlist
+SET channel_name = '',
+    subscriber_count = 0,
+    median_20_views = 0,
+    uploads_playlist_id = '',
+    is_active = 0,
+    yt_api_purged_at = :now_ms
+WHERE yt_ttl_expires_at <= :now_ms
+  AND yt_api_purged_at IS NULL;
+
 -- name: consume_quota_bucket
+-- :units must be positive. This statement does not reset the window.
+-- Call reset_quota_window explicitly when the Pacific day (or other window) rolls.
 UPDATE quota_buckets
 SET used_today = used_today + :units
 WHERE bucket_name = :bucket_name
+  AND :units > 0
   AND used_today + :units <= daily_limit
 RETURNING bucket_name, used_today, daily_limit;
+
+-- name: reset_quota_window
+-- Explicit reset. window_reset_at must move or trg_quota_no_silent_restore aborts.
+UPDATE quota_buckets
+SET used_today = 0,
+    window_reset_at = :now_ms
+WHERE bucket_name = :bucket_name
+  AND :now_ms != window_reset_at
+RETURNING bucket_name, used_today, window_reset_at;
 
 -- name: recent_entropy_window
 SELECT episode_id, cold_open_archetype, thumbnail_mood_vec, published_at
@@ -82,11 +116,10 @@ WHERE account_id = :account_id
 RETURNING account_id, daily_credits_left, first_daily_spend_utc_ms, next_daily_reset_utc_ms;
 
 -- name: refund_daily_account_credits
-UPDATE google_accounts
-SET daily_credits_left = MIN(daily_credits_cap, daily_credits_left + :credits)
-WHERE account_id = :account_id
-  AND :now_ms < next_daily_reset_utc_ms
-RETURNING account_id, daily_credits_left;
+-- refund_id is the idempotency key. A second insert of the same id fails.
+INSERT INTO credit_refunds (refund_id, account_id, reservation_id, credits, created_at)
+VALUES (:refund_id, :account_id, :reservation_id, :credits, :now_ms)
+RETURNING refund_id, account_id, credits;
 
 -- name: reconcile_unknown_flow_jobs
 SELECT

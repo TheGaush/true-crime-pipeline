@@ -1998,10 +1998,7 @@
           "type": "boolean"
         },
         "vision_frame_qa_status": {
-          "enum": [
-            "PASSED",
-            "PENDING_MANUAL_SPOT_CHECK"
-          ],
+          "const": "PASSED",
           "title": "Vision Frame Qa Status",
           "type": "string"
         },
@@ -2042,6 +2039,7 @@
           "items": {
             "type": "string"
           },
+          "maxItems": 0,
           "title": "Human Review Flags",
           "type": "array"
         },

@@ -17,6 +17,10 @@ budgets:
   per_episode_video_cap_micro_usd: 10400000
   offline_test_cap_usd: 0.00
   live_sandbox_cap_usd: 2.00
+  # Enforced in pipeline.db meta live_sandbox_lifetime_cap_micro_usd (2000000).
+  # The cap is lifetime for purpose=LIVE_SANDBOX, including retries, and is separate
+  # from the vision_qa monthly provider cap which is also $2.
+  live_sandbox_cap_micro_usd: 2000000
   live_sandbox_requires:
     - "--live-sandbox"
     - "ALLOW_PAID_SANDBOX=1"

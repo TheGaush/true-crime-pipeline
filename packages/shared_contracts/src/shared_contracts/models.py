@@ -596,14 +596,14 @@ class ReadyToUploadPack(ContractModel):
     true_peak_dbtp: float
     lufs_passed: Literal[True]
     safe_zone_passed: Literal[True]
-    vision_frame_qa_status: VisionQaStatus
+    vision_frame_qa_status: Literal["PASSED"]
     thumbnail_brand_passed: Literal[True]
     thumbnail_relpaths: list[str] = Field(min_length=1, max_length=3)
     chapters_relpath: Literal["chapters.txt"]
     youtube_synthetic_disclosure_required: bool
     provenance_bundle_relpath: Literal["provenance_bundle.json"]
     qa_certificate_relpath: Literal["qa_certificate.json"]
-    human_review_flags: list[str] = Field(default_factory=list)
+    human_review_flags: list[str] = Field(default_factory=list, max_length=0)
     approved_release_gates: list[ReleaseGate] = Field(min_length=5, max_length=5)
 
     @model_validator(mode="after")
@@ -615,6 +615,12 @@ class ReadyToUploadPack(ContractModel):
                 raise ValueError("thumbnail_relpaths must be png files")
         if self.true_peak_dbtp > -1.0:
             raise ValueError("true_peak_dbtp must be <= -1.0")
+        if not -14.5 <= self.integrated_lufs <= -13.5:
+            raise ValueError("integrated_lufs must stay within 0.5 of -14.0")
+        if self.vision_frame_qa_status != "PASSED":
+            raise ValueError("vision_frame_qa_status must be PASSED before upload")
+        if self.human_review_flags:
+            raise ValueError("human_review_flags must be empty before upload")
         if list(self.approved_release_gates) != list(RELEASE_GATES):
             raise ValueError("approved_release_gates must be the five release gates in order")
         for flag in self.human_review_flags:
