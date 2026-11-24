@@ -167,21 +167,36 @@ def promote(connection: sqlite3.Connection) -> None:
 def render_master(out_path: str) -> dict:
     path = Path(out_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        [
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", "color=c=0xE9E2D2:s=854x480:r=30:d=90",
-            "-f", "lavfi", "-i", "sine=frequency=220:sample_rate=48000:duration=90",
-            "-filter:a", "loudnorm=I=-14:TP=-1.5:LRA=11",
-            "-c:v", "libx264", "-preset", "ultrafast", "-tune", "stillimage", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "160k",
-            "-frames:v", "2700",
-            "-shortest",
-            str(path),
-        ],
-        check=True,
-        capture_output=True,
-    )
+    from integration_bridge.episode_picture import DRAW_FPS, HEIGHT, WIDTH, iter_frames
+
+    command = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}",
+        "-framerate", str(DRAW_FPS), "-i", "pipe:0",
+        "-f", "lavfi", "-i", "sine=frequency=110:sample_rate=48000:duration=90",
+        "-f", "lavfi", "-i", "sine=frequency=220:sample_rate=48000:duration=90,volume=0.35",
+        "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=first,loudnorm=I=-14:TP=-1.5:LRA=11[a]",
+        "-map", "0:v", "-map", "[a]",
+        "-vf", "fps=30",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "160k",
+        "-frames:v", "2700",
+        "-shortest",
+        str(path),
+    ]
+    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    assert process.stdin is not None
+    try:
+        for frame in iter_frames():
+            process.stdin.write(frame)
+        process.stdin.close()
+        error = process.stderr.read() if process.stderr is not None else b""
+        process.wait()
+    except Exception:
+        process.kill()
+        raise
+    if process.returncode != 0:
+        raise RuntimeError(error.decode("utf-8", "replace")[-800:])
     frames = _probe(path, "nb_frames", "v:0")
     return {"path": str(path), "nb_frames": int(frames), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "integrated_lufs": _lufs(path)}
 
