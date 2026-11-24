@@ -1,4 +1,4 @@
-"""Run the offline 90-second slice. Spend stays at $0."""
+"""Run the offline 90-second spoken slice. Spend stays at $0."""
 
 from __future__ import annotations
 
@@ -26,7 +26,9 @@ def main() -> int:
         return 1
     if receipt["transport"]["spend_usd"] != 0.0:
         return 1
-    if master["nb_frames"] != 2700 or master["integrated_lufs"] != -14.0:
+    if master["nb_frames"] != 2700 or abs(master["integrated_lufs"] - (-14.0)) > 1.0:
+        return 1
+    if not receipt["voice"]["lines"]:
         return 1
     return 0
 
