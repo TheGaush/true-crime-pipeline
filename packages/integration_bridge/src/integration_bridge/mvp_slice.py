@@ -156,6 +156,23 @@ def approve(connection: sqlite3.Connection) -> None:
             """,
             (f"ap_{gate}", "ep_slice", gate, SHA),
         )
+    connection.execute(
+        """
+        INSERT INTO qa_reports (
+          qa_id, episode_id, integrated_lufs, true_peak_dbtp, lufs_passed, safe_zone_passed,
+          vision_frame_qa_status, thumbnail_brand_passed, final_mp4_path, final_mp4_sha256, created_at
+        ) VALUES ('qa_slice','ep_slice',-14.0,-1.5,1,1,'PASSED',1,'final.mp4',?,4000)
+        """,
+        (SHA,),
+    )
+    connection.execute(
+        """
+        INSERT INTO compliance_audits (
+          audit_id, case_id, provenance_whitelist_ok, that_vs_how_passed, anti_legal_persona_passed,
+          first_30s_adsense_safe, spoken_pii_audit_passed, altered_content_disclosure, audited_at
+        ) VALUES ('aud_slice','case_slice',1,1,1,1,1,1,4000)
+        """
+    )
 
 
 def promote(connection: sqlite3.Connection) -> None:
