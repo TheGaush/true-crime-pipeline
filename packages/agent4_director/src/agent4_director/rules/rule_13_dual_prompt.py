@@ -263,7 +263,7 @@ def _rule_11_violations(
                 )
             )
         return violations
-    except ImportError:
+    except (ImportError, TypeError):
         pass
 
     words = _tokenize(prompt)

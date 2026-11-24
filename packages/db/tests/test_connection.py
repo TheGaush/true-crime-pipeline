@@ -30,17 +30,13 @@ def _load_db_package():
     existing = sys.modules.get("db")
     if existing is not None and hasattr(existing, "PipelineDb"):
         return existing
-    spec = importlib.util.spec_from_file_location(
-        "db",
-        _SRC / "__init__.py",
-        submodule_search_locations=[str(_SRC)],
-    )
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot load db package from {_SRC}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["db"] = module
-    spec.loader.exec_module(module)
-    return module
+    if str(_SRC) not in sys.path:
+        sys.path.insert(0, str(_SRC))
+    import db as real
+
+    if hasattr(real, "PipelineDb"):
+        return real
+    raise RuntimeError(f"db package at {_SRC} does not export PipelineDb")
 
 
 _load_db_package()

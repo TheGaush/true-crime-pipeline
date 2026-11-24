@@ -1,5 +1,13 @@
-"""Telemetry cost logger. Import ``TelemetryCostLogger`` from this package."""
+"""Database package used by the sole-writer tests and the telemetry logger."""
 
+from .connection import (
+    MIN_SQLITE_VERSION,
+    NetworkPathError,
+    PipelineDb,
+    SoleWriterOccupiedError,
+    SqliteVersionError,
+    WalModeError,
+)
 from .telemetry_repo import (
     CachedTokensExceedTotal,
     EpisodeSpend,
@@ -13,6 +21,12 @@ from .telemetry_repo import (
 )
 
 __all__ = [
+    "MIN_SQLITE_VERSION",
+    "NetworkPathError",
+    "PipelineDb",
+    "SoleWriterOccupiedError",
+    "SqliteVersionError",
+    "WalModeError",
     "CachedTokensExceedTotal",
     "EpisodeSpend",
     "InvalidRates",
