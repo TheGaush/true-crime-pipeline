@@ -1,7 +1,7 @@
 [project]
 name = "tc-orchestrator"
 version = "0.0.0"
-description = "Orchestrator conveyor, CLI, and budget guardrails."
+description = "Part 1 orchestrator fault-recovery soak tests."
 requires-python = ">=3.12"
 dependencies = []
 
