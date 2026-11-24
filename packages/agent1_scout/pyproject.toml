@@ -1,20 +1,23 @@
 [project]
 name = "tc-agent1-scout"
 version = "0.1.0"
-description = "Agent 1 deduplicated alias search runner. Offline injected YouTube list calls only."
+description = "Agent 1 scout: mutually exclusive saturation index."
 requires-python = ">=3.11"
 dependencies = []
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pytest>=8.0"]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
+[tool.setuptools]
+py-modules = ["saturation"]
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 pythonpath = ["src"]
+testpaths = ["tests"]
