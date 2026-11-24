@@ -1,16 +1,21 @@
 [project]
-name = "tc-db"
-version = "0.0.0"
-description = "Empty Task 001 shell. No business logic."
+name = "pipeline-db"
+version = "0.0.1"
+description = "Python sole-writer SQLite WAL driver for pipeline.db"
 requires-python = ">=3.12"
 dependencies = []
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.optional-dependencies]
+dev = ["pytest>=8"]
 
-[tool.hatch.build.targets.wheel]
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"db" = "src"}
 packages = ["db"]
 
-[tool.hatch.build.targets.wheel.sources]
-"src" = ""
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
