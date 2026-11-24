@@ -1,21 +1,23 @@
 [project]
 name = "tc-agent1-scout"
-version = "0.0.0"
-description = "Agent 1 dynamic YouTube channel watchlist seeder and pruner."
-requires-python = ">=3.12"
+version = "0.1.0"
+description = "Agent 1 scout: watchlist, polling, and saturation discovery."
+requires-python = ">=3.11"
 dependencies = []
 
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["agent1_scout"]
+[tool.setuptools]
+py-modules = ["poller"]
 
-[tool.hatch.build.targets.wheel.sources]
-"src" = ""
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-p no:cacheprovider"
