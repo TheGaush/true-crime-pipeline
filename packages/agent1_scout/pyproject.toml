@@ -1,20 +1,23 @@
 [project]
 name = "tc-agent1-scout"
-version = "0.0.0"
-description = "Agent 1 scout — outlier ratio scoring (Task 017)."
+version = "0.1.0"
+description = "Agent 1 scout utilities for the true-crime documentary pipeline."
 requires-python = ">=3.11"
 dependencies = []
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pytest>=8.0"]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
+[tool.setuptools]
+py-modules = ["alias_expander"]
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 pythonpath = ["src"]
+testpaths = ["tests"]
