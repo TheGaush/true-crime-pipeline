@@ -132,9 +132,18 @@ def paint(t: float) -> _Plate:
         plate = _affidavit(t)
     else:
         plate = _foia(t)
+    _caption(plate, t)
     plate.rect(0, HEIGHT - 36, WIDTH, 36, INK)
     plate.text(16, HEIGHT - 28, "ILLUSTRATIVE  |  SYNTHETIC DISCLOSURE  |  NOT A REAL PERSON", PARCHMENT, 2)
     return plate
+
+
+def _caption(plate: _Plate, t: float) -> None:
+    from integration_bridge.narration import caption_lines
+
+    plate.rect(0, HEIGHT - 96, WIDTH, 60, SLATE)
+    for index, line in enumerate(caption_lines(t)):
+        plate.text(16, HEIGHT - 88 + index * 16, line, PARCHMENT, 2)
 
 
 def _title(t: float) -> _Plate:

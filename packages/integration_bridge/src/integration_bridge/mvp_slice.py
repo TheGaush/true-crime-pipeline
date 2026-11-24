@@ -72,7 +72,11 @@ def screen_source(url: str) -> None:
         raise SliceBlocked("competitor video is not a source")
 
 
-def seed(connection: sqlite3.Connection, narration: str = "At 10:14 PM a silhouette crossed the porch.") -> None:
+def seed(connection: sqlite3.Connection, narration: str | None = None) -> None:
+    if narration is None:
+        from integration_bridge.narration import script_text
+
+        narration = script_text()
     screen_narration(narration)
     connection.execute(
         """
@@ -185,14 +189,17 @@ def render_master(out_path: str) -> dict:
     path = Path(out_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     from integration_bridge.episode_picture import DRAW_FPS, HEIGHT, WIDTH, iter_frames
+    from integration_bridge.voice_track import render_narration
 
+    voice = render_narration(str(path.with_name("narration.wav")))
     command = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}",
         "-framerate", str(DRAW_FPS), "-i", "pipe:0",
-        "-f", "lavfi", "-i", "sine=frequency=110:sample_rate=48000:duration=90",
-        "-f", "lavfi", "-i", "sine=frequency=220:sample_rate=48000:duration=90,volume=0.35",
-        "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=first,loudnorm=I=-14:TP=-1.5:LRA=11[a]",
+        "-i", voice["path"],
+        "-filter_complex",
+        "[1:a]acompressor=threshold=-30dB:ratio=20:attack=1:release=40:makeup=20:knee=2,"
+        "alimiter=limit=0.71:level=disabled,loudnorm=I=-14:TP=-1.5:LRA=7[a]",
         "-map", "0:v", "-map", "[a]",
         "-vf", "fps=30",
         "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
@@ -215,7 +222,13 @@ def render_master(out_path: str) -> dict:
     if process.returncode != 0:
         raise RuntimeError(error.decode("utf-8", "replace")[-800:])
     frames = _probe(path, "nb_frames", "v:0")
-    return {"path": str(path), "nb_frames": int(frames), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "integrated_lufs": _lufs(path)}
+    return {
+        "path": str(path),
+        "nb_frames": int(frames),
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "integrated_lufs": _lufs(path),
+        "voice": voice,
+    }
 
 
 def run_slice(db_path: str, master_path: str) -> dict:
@@ -239,6 +252,7 @@ def run_slice(db_path: str, master_path: str) -> dict:
         "released_without_gates": released,
         "motifs": MOTIFS,
         "transport": receipt,
+        "voice": master["voice"],
         "master": master,
         "state": connection.execute("SELECT state FROM episodes WHERE episode_id='ep_slice'").fetchone()["state"],
     }
