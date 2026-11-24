@@ -1,19 +1,22 @@
 [project]
-name = "tc-db"
+name = "true-crime-pipeline-db"
 version = "0.0.0"
+description = "SQLite repositories for the true-crime documentary pipeline (Task 013 slice)"
 requires-python = ">=3.11"
-dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
+[tool.setuptools]
+py-modules = ["entropy_repo"]
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 pythonpath = ["src"]
+testpaths = ["tests"]
