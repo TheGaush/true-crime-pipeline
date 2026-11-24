@@ -1,11 +1,22 @@
 [project]
-name = "true-crime-pipeline-db"
-version = "0.0.0"
-description = "SQLite bootstrap and migration runner (Task 006)"
+name = "tc-db"
+version = "0.1.0"
+description = "SQLite repositories for the true-crime documentary pipeline."
 requires-python = ">=3.11"
+dependencies = []
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["quota_repo"]
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
