@@ -1,21 +1,13 @@
-from poller import (
-    ActiveChannel,
-    NightlyZeroSearchPoller,
-    PolledVideo,
-    PollRunResult,
-    SearchListForbiddenError,
-    YT_TTL_MS,
-    is_long_form,
-    parse_iso8601_duration,
+"""Agent 1 scout package (Task 017: outlier ratio filter)."""
+
+from outlier_filter import (
+    ChannelVideo,
+    OutlierRatioScorer,
+    ScoredOutlierCandidate,
 )
 
 __all__ = [
-    "ActiveChannel",
-    "NightlyZeroSearchPoller",
-    "PolledVideo",
-    "PollRunResult",
-    "SearchListForbiddenError",
-    "YT_TTL_MS",
-    "is_long_form",
-    "parse_iso8601_duration",
+    "ChannelVideo",
+    "OutlierRatioScorer",
+    "ScoredOutlierCandidate",
 ]
