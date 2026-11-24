@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from integration_bridge.mvp_slice import run_slice
+from integration_bridge.pipeline_run import workflow_report
 
 
 def main() -> int:
@@ -16,6 +17,7 @@ def main() -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     receipt = run_slice(str(out / "pipeline.db"), str(out / "master.mp4"))
+    receipt["workflow"] = workflow_report()
     print(json.dumps(receipt, indent=2, sort_keys=True))
     master = receipt["master"]
     if receipt["released_without_gates"]:
