@@ -5,6 +5,7 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
+from integration_bridge.mvp_slice import connect, run_slice, seed
 from integration_bridge.narration import active_line, caption_lines, script_text
 from integration_bridge.pipeline_run import workflow_report
 from integration_bridge.voice_track import render_narration
@@ -44,6 +45,29 @@ def test_missing_flite_uses_the_bundled_take(monkeypatch, tmp_path: Path):
     assert info["engine"] == "bundled"
     with wave.open(str(tmp_path / "narration.wav")) as handle:
         assert handle.getnframes() / handle.getframerate() == 90
+
+
+def test_a_second_run_replaces_the_saved_case(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(
+        "integration_bridge.mvp_slice.render_master",
+        lambda path: {
+            "path": path,
+            "nb_frames": 2700,
+            "sha256": "a" * 64,
+            "integrated_lufs": -14.0,
+            "voice": {"engine": "bundled", "path": path, "lines": ["An illustrative case file."]},
+        },
+    )
+    database = tmp_path / "pipeline.db"
+    master = tmp_path / "master.mp4"
+    connection = connect(str(database))
+    seed(connection)
+    connection.commit()
+    connection.close()
+    first = run_slice(str(database), str(master))
+    second = run_slice(str(database), str(master))
+    assert first["state"] == "READY_TO_UPLOAD"
+    assert second["state"] == "READY_TO_UPLOAD"
 
 
 def test_paid_keys_do_not_place_a_call(monkeypatch):
