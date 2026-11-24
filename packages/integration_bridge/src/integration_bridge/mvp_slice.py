@@ -42,6 +42,14 @@ class OfflineTransport:
         return {"output_tokens": 0, "purpose": "OFFLINE_TEST", "spend_usd": 0.0}
 
 
+def replace_output_database(path: str) -> None:
+    """Drop a previous episode so a second local run can insert the same case."""
+    database = Path(path)
+    for candidate in (database, Path(str(database) + "-wal"), Path(str(database) + "-shm")):
+        if candidate.exists():
+            candidate.unlink()
+
+
 def connect(path: str) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
     connection.row_factory = sqlite3.Row
@@ -234,6 +242,7 @@ def render_master(out_path: str) -> dict:
 def run_slice(db_path: str, master_path: str) -> dict:
     transport = OfflineTransport()
     receipt = transport.create("A quiet desk, no people.")
+    replace_output_database(db_path)
     connection = connect(db_path)
     seed(connection)
     connection.commit()
