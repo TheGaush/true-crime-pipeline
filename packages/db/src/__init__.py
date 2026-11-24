@@ -1,6 +1,6 @@
-"""True-crime pipeline database repositories."""
+"""SQLite repositories for the true-crime pipeline."""
 
-from accounts_repo import (
+from .accounts_repo import (
     DAILY_CREDITS_CAP,
     DAILY_RESET_OFFSET_MS,
     MONTHLY_CREDITS_CAP,
@@ -14,11 +14,12 @@ from accounts_repo import (
     extract_named_query,
     load_named_query,
 )
-
-try:
-    from connection import PipelineDb
-except ImportError:  # Task 005 may not be merged yet
-    PipelineDb = None  # type: ignore[misc, assignment]
+from .migrations import (
+    DbInitializer,
+    MigrationFailedError,
+    MigrationRunner,
+    SchemaVersionTooNewError,
+)
 
 __all__ = [
     "DAILY_CREDITS_CAP",
@@ -29,9 +30,12 @@ __all__ = [
     "CreditPool",
     "DailyCreditsLockedError",
     "DailyLockStatus",
+    "DbInitializer",
     "InsufficientCreditsError",
-    "PipelineDb",
+    "MigrationFailedError",
+    "MigrationRunner",
     "ReserveOutcome",
+    "SchemaVersionTooNewError",
     "extract_named_query",
     "load_named_query",
 ]
