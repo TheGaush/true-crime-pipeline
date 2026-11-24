@@ -1,0 +1,119 @@
+{
+  "fixture_kind": "muckrock_completed",
+  "count": 6,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 91001,
+      "title": "Marlow County DA case file — Rivera homicide",
+      "status": "done",
+      "suspect_names": ["Alex Rivera"],
+      "victim_names": [],
+      "incident_date_or_year": "2019",
+      "county_state": "Marlow County, GA",
+      "docket_ids": ["CR-2019-0142"],
+      "files": [
+        {
+          "filename": "affidavit_redacted.pdf",
+          "content_type": "application/pdf",
+          "size_bytes": 184320,
+          "attachment_kind": "records"
+        }
+      ]
+    },
+    {
+      "id": 91002,
+      "title": "Hale incident lobby CCTV FOIA release",
+      "status": "done",
+      "suspect_names": [],
+      "victim_names": ["Jordan Hale"],
+      "incident_date_or_year": "2020",
+      "county_state": "Beacon County, OR",
+      "docket_ids": [],
+      "files": [
+        {
+          "filename": "walmart_lobby_cctv.mp4",
+          "content_type": "video/mp4",
+          "size_bytes": 5242880,
+          "attachment_kind": "records"
+        }
+      ]
+    },
+    {
+      "id": 91003,
+      "title": "Empty completed drop",
+      "status": "done",
+      "suspect_names": ["Ghost Suspect"],
+      "victim_names": [],
+      "incident_date_or_year": "2018",
+      "county_state": "Nowhere County, TX",
+      "docket_ids": [],
+      "files": []
+    },
+    {
+      "id": 91004,
+      "title": "Records request denied in full",
+      "status": "done",
+      "suspect_names": ["Denied Subject"],
+      "victim_names": [],
+      "incident_date_or_year": "2017",
+      "county_state": "Silent County, NV",
+      "docket_ids": [],
+      "files": [
+        {
+          "filename": "agency_denial_letter.pdf",
+          "content_type": "application/pdf",
+          "size_bytes": 65536,
+          "attachment_kind": "denial_letter"
+        }
+      ]
+    },
+    {
+      "id": 91005,
+      "title": "Fee waiver correspondence only",
+      "status": "done",
+      "suspect_names": ["Fee Target"],
+      "victim_names": [],
+      "incident_date_or_year": "2016",
+      "county_state": "Ledger County, KS",
+      "docket_ids": [],
+      "files": [
+        {
+          "filename": "fee_waiver_ack.pdf",
+          "content_type": "application/pdf",
+          "size_bytes": 4096,
+          "attachment_kind": "fee_waiver_correspondence"
+        },
+        {
+          "filename": "fee_waiver_reply.pdf",
+          "content_type": "application/pdf",
+          "size_bytes": 3072,
+          "attachment_kind": "fee_waiver_correspondence"
+        }
+      ]
+    },
+    {
+      "id": 91006,
+      "title": "Saturation kill candidate",
+      "status": "done",
+      "suspect_names": ["Saturated Lead"],
+      "victim_names": [],
+      "incident_date_or_year": "2015",
+      "county_state": "Index County, ME",
+      "docket_ids": [],
+      "files": [
+        {
+          "filename": "incident_summary.pdf",
+          "content_type": "application/pdf",
+          "size_bytes": 12288,
+          "attachment_kind": "records"
+        }
+      ]
+    }
+  ],
+  "fixture_controls": {
+    "live_http": false,
+    "authorization_header_present": false
+  }
+}
