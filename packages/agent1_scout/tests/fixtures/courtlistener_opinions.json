@@ -1,0 +1,242 @@
+{
+  "fixture_kind": "courtlistener_opinions",
+  "live_http": false,
+  "daily_cap": 125,
+  "scout_request_budget": 62,
+  "opinions": [
+    {
+      "id": 1042001,
+      "case_name": "State v. Hale",
+      "defendant": "John Hale",
+      "docket_number": "2019-CR-1042",
+      "court": "Montana Supreme Court",
+      "appellate": true,
+      "criminal": true,
+      "nature_of_suit": "criminal",
+      "date_filed": "2021-06-18",
+      "incident_year": "2018",
+      "county_state": "Lewis and Clark County, MT",
+      "word_count": 4200,
+      "plain_text": "The deliberate homicide conviction is affirmed.",
+      "dispositions": [
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "AFFIRMED"
+        }
+      ]
+    },
+    {
+      "id": 1042002,
+      "case_name": "State v. Keller",
+      "defendant": "Mara Keller",
+      "docket_number": "2020-CR-220",
+      "court": "Montana Supreme Court",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2022-03-01",
+      "incident_year": "2019",
+      "county_state": "Missoula County, MT",
+      "word_count": 6100,
+      "plain_text": "The murder conviction is reversed. A theft count was affirmed.",
+      "primary_disposition": "REVERSED",
+      "dispositions": [
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "REVERSED"
+        },
+        {
+          "count": "theft",
+          "role": "minor",
+          "disposition": "AFFIRMED"
+        }
+      ]
+    },
+    {
+      "id": 1042003,
+      "case_name": "State v. Nunez",
+      "defendant": "Luis Nunez",
+      "docket_number": "2018-CR-77",
+      "court": "Court of Appeals of Georgia",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2020-11-12",
+      "incident_year": "2016",
+      "county_state": "Fulton County, GA",
+      "word_count": 3500,
+      "plain_text": "The murder judgment is remanded.",
+      "dispositions": [
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "REMANDED"
+        }
+      ]
+    },
+    {
+      "id": 1042004,
+      "case_name": "State v. Pell",
+      "defendant": "Andrea Pell",
+      "docket_number": "2021-CR-15",
+      "court": "Supreme Court of Ohio",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2023-04-04",
+      "incident_year": "2017",
+      "county_state": "Cuyahoga County, OH",
+      "word_count": 5100,
+      "plain_text": "The firearm count is reversed. The murder conviction is affirmed.",
+      "disposition_summary": "AFFIRMED in part and REVERSED in part",
+      "primary_disposition": "REVERSED",
+      "dispositions": [
+        {
+          "count": "felon in possession of a firearm",
+          "role": "minor",
+          "disposition": "REVERSED"
+        },
+        {
+          "count": "first-degree murder",
+          "disposition": "AFFIRMED"
+        }
+      ]
+    },
+    {
+      "id": 1042005,
+      "case_name": "State v. Short",
+      "defendant": "Evan Short",
+      "docket_number": "2022-CR-9",
+      "court": "Iowa Supreme Court",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2024-01-09",
+      "incident_year": "2020",
+      "county_state": "Polk County, IA",
+      "word_count": 2999,
+      "plain_text": "The murder conviction is affirmed in a short memorandum.",
+      "dispositions": [
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "AFFIRMED"
+        }
+      ]
+    },
+    {
+      "id": 1042006,
+      "case_name": "Estate of Cole v. City Hospital",
+      "defendant": "City Hospital",
+      "docket_number": "2020-CV-88",
+      "court": "Washington Court of Appeals",
+      "appellate": true,
+      "criminal": false,
+      "nature_of_suit": "civil",
+      "date_filed": "2021-08-30",
+      "incident_year": "2015",
+      "county_state": "King County, WA",
+      "word_count": 8000,
+      "plain_text": "The civil judgment is affirmed.",
+      "dispositions": [
+        {
+          "count": "negligence",
+          "role": "primary",
+          "disposition": "AFFIRMED"
+        }
+      ]
+    },
+    {
+      "id": 1042007,
+      "case_name": "State v. Briggs",
+      "defendant": "Noah Briggs",
+      "docket_number": "2017-CR-404",
+      "court": "Supreme Court of California",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2022-07-19",
+      "incident_year": "2014",
+      "county_state": "Alameda County, CA",
+      "word_count": 9000,
+      "plain_text": "Murder is reversed. A minor theft count is affirmed.",
+      "dispositions": [
+        {
+          "count": "theft",
+          "role": "minor",
+          "disposition": "AFFIRMED"
+        },
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "REVERSED"
+        }
+      ]
+    },
+    {
+      "id": 1042008,
+      "case_name": "State v. Okonkwo",
+      "defendant": "Chidi Okonkwo",
+      "docket_number": "2016-CR-512",
+      "court": "Appellate Court of Illinois",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2019-12-02",
+      "incident_year": "2013",
+      "county_state": "Cook County, IL",
+      "word_count": 4700,
+      "plain_text": "Armed robbery is affirmed. Criminal trespass is reversed.",
+      "dispositions": [
+        {
+          "count": "armed robbery",
+          "role": "primary",
+          "disposition": "AFFIRMED"
+        },
+        {
+          "count": "criminal trespass",
+          "role": "minor",
+          "disposition": "REVERSED"
+        }
+      ]
+    },
+    {
+      "id": 1042009,
+      "case_name": "State v. Trial",
+      "defendant": "Rita Trial",
+      "docket_number": "2021-CR-300",
+      "court": "Lewis and Clark County District Court",
+      "appellate": false,
+      "criminal": true,
+      "date_filed": "2021-05-05",
+      "incident_year": "2019",
+      "county_state": "Lewis and Clark County, MT",
+      "word_count": 4500,
+      "plain_text": "The trial court entered an affirmed judgment. This is not an appellate opinion.",
+      "dispositions": [
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "AFFIRMED"
+        }
+      ]
+    },
+    {
+      "id": 1042010,
+      "case_name": "State v. Vacant",
+      "defendant": "Owen Vacant",
+      "docket_number": "2015-CR-18",
+      "court": "Colorado Court of Appeals",
+      "appellate": true,
+      "criminal": true,
+      "date_filed": "2018-02-14",
+      "incident_year": "2012",
+      "county_state": "Denver County, CO",
+      "word_count": 3800,
+      "plain_text": "The conviction is vacated.",
+      "dispositions": [
+        {
+          "count": "first-degree murder",
+          "role": "primary",
+          "disposition": "VACATED"
+        }
+      ]
+    }
+  ]
+}
