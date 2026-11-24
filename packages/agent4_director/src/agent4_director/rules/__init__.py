@@ -1,1 +1,1 @@
-"""Deterministic manifest lint rules for Agent 4."""
+"""Deterministic manifest linter rules (Agent 4)."""
