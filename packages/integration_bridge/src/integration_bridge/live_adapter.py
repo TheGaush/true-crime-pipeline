@@ -9,20 +9,18 @@ from pathlib import Path
 
 from .mvp_slice import REPO, connect
 
-MOTIF_REGISTRY_V1 = (
-    "StickmanStage",
-    "AudioEvidenceCard",
-    "RedactedDocReveal",
-    "FoiaFootageFrame",
-    "TimelineScrubber",
-    "SmsPhoneThread",
-    "MapRouteTrace",
-    "CaseBoardSpine",
-    "AlibiSplitScreen",
-    "EvidenceMatchCard",
-    "HeroVideoBridge",
-    "CustomDiagramScene",
-)
+def registry_motifs() -> tuple[str, ...]:
+    """Names stored in schema/pipeline.sql. That insert is the registry."""
+    text = (REPO / "schema" / "pipeline.sql").read_text(encoding="utf8")
+    start = text.index("INSERT INTO motif_registry VALUES")
+    block = text[start : text.index(";", start)]
+    names = tuple(line.split("'")[1] for line in block.splitlines() if line.strip().startswith("('"))
+    if len(names) != 14 or names[0] != "StickmanStage" or "HeroVideoBridge" not in names:
+        raise RuntimeError("motif registry insert does not match the frozen 14-row contract")
+    return names
+
+
+MOTIF_REGISTRY_V1 = registry_motifs()
 
 
 def _motion(stem: str):
