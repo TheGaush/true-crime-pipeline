@@ -1,1 +1,1 @@
-"""Deterministic manifest linter rules for Agent 4."""
+"""Deterministic director manifest rules and laws."""
