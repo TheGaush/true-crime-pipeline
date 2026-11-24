@@ -1,13 +1,29 @@
-"""Agent 1 scout package (Task 017: outlier ratio filter)."""
+"""Agent 1 scout. Task 019 exports the deduplicated alias search runner."""
 
-from outlier_filter import (
-    ChannelVideo,
-    OutlierRatioScorer,
-    ScoredOutlierCandidate,
+from search_runner import (
+    SEARCH_LIST_QUOTA_UNITS,
+    SPILLOVER_DISCOVERED_VIA,
+    SUBSCRIBER_COUNT_MAX,
+    SUBSCRIBER_COUNT_MIN,
+    VIDEOS_LIST_BATCH_SIZE,
+    YT_SEARCH_CALL_RESERVE,
+    AliasDedupSearchRunner,
+    DedupedVideo,
+    OutlierCandidate,
+    SearchRunResult,
+    SpilloverCandidate,
 )
 
 __all__ = [
-    "ChannelVideo",
-    "OutlierRatioScorer",
-    "ScoredOutlierCandidate",
+    "SEARCH_LIST_QUOTA_UNITS",
+    "SPILLOVER_DISCOVERED_VIA",
+    "SUBSCRIBER_COUNT_MAX",
+    "SUBSCRIBER_COUNT_MIN",
+    "VIDEOS_LIST_BATCH_SIZE",
+    "YT_SEARCH_CALL_RESERVE",
+    "AliasDedupSearchRunner",
+    "DedupedVideo",
+    "OutlierCandidate",
+    "SearchRunResult",
+    "SpilloverCandidate",
 ]

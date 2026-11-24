@@ -1,23 +1,20 @@
 [project]
 name = "tc-agent1-scout"
 version = "0.1.0"
-description = "Agent 1 scout utilities for the true-crime documentary pipeline."
+description = "Agent 1 deduplicated alias search runner. Offline injected YouTube list calls only."
 requires-python = ">=3.11"
 dependencies = []
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
-py-modules = ["alias_expander"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = ["tests"]
+pythonpath = ["src"]

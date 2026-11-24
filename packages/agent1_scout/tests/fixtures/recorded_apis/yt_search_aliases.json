@@ -1,0 +1,237 @@
+{
+  "quota_note": "Offline recording. A live search.list costs 100 quota units. AliasDedupSearchRunner charges 1 call per alias query and will not spend into the 15-call yt_search floor. subscriberCount is injected on videos.list statistics because this runner does not call channels.list.",
+  "search_list": {
+    "Mara Ellison 2018": {
+      "kind": "youtube#searchListResponse",
+      "items": [
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_shared_all4"},
+          "snippet": {
+            "channelId": "UC_known_watchlist",
+            "channelTitle": "Known Desk",
+            "title": "Mara Ellison 2018 timeline",
+            "publishedAt": "2024-06-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_spill_mid"},
+          "snippet": {
+            "channelId": "UC_spill_mid",
+            "channelTitle": "Mid Desk",
+            "title": "Riverside case notes",
+            "publishedAt": "2025-02-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#playlist", "playlistId": "PL_ignore_me"},
+          "snippet": {
+            "channelId": "UC_playlist_owner",
+            "title": "A playlist is not a video"
+          }
+        }
+      ]
+    },
+    "Mara Ellison homicide": {
+      "kind": "youtube#searchListResponse",
+      "items": [
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_shared_all4"},
+          "snippet": {
+            "channelId": "UC_known_watchlist",
+            "title": "Mara Ellison 2018 timeline",
+            "publishedAt": "2024-06-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_spill_floor"},
+          "snippet": {
+            "channelId": "UC_spill_floor",
+            "title": "Floor band channel",
+            "publishedAt": "2025-03-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_too_small"},
+          "snippet": {
+            "channelId": "UC_too_small",
+            "title": "Below the 2K band",
+            "publishedAt": "2025-03-02T00:00:00Z"
+          }
+        }
+      ]
+    },
+    "Riverside Jane Doe": {
+      "kind": "youtube#searchListResponse",
+      "items": [
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_shared_all4"},
+          "snippet": {
+            "channelId": "UC_known_watchlist",
+            "title": "Mara Ellison 2018 timeline",
+            "publishedAt": "2024-06-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_spill_ceil"},
+          "snippet": {
+            "channelId": "UC_spill_ceil",
+            "title": "Ceiling band channel",
+            "publishedAt": "2025-04-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_too_big"},
+          "snippet": {
+            "channelId": "UC_too_big",
+            "title": "Graduated past 120K",
+            "publishedAt": "2025-04-02T00:00:00Z"
+          }
+        }
+      ]
+    },
+    "copper-green fiber under fingernail": {
+      "kind": "youtube#searchListResponse",
+      "items": [
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_shared_all4"},
+          "snippet": {
+            "channelId": "UC_known_watchlist",
+            "title": "Mara Ellison 2018 timeline",
+            "publishedAt": "2024-06-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_spill_mid"},
+          "snippet": {
+            "channelId": "UC_spill_mid",
+            "title": "Riverside case notes",
+            "publishedAt": "2025-02-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_spill_mid_2"},
+          "snippet": {
+            "channelId": "UC_spill_mid",
+            "title": "Second video from the same unknown channel",
+            "publishedAt": "2025-05-01T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#video", "videoId": "yt_hidden"},
+          "snippet": {
+            "channelId": "UC_hidden",
+            "title": "Hidden subscriber count",
+            "publishedAt": "2025-05-02T00:00:00Z"
+          }
+        },
+        {
+          "id": {"kind": "youtube#channel", "channelId": "UC_search_channel_hit"},
+          "snippet": {
+            "channelId": "UC_search_channel_hit",
+            "title": "Channel results are not videos"
+          }
+        }
+      ]
+    }
+  },
+  "videos_list": {
+    "yt_shared_all4": {
+      "id": "yt_shared_all4",
+      "snippet": {
+        "channelId": "UC_known_watchlist",
+        "title": "Mara Ellison 2018 timeline",
+        "publishedAt": "2024-06-01T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "88000",
+        "likeCount": "900",
+        "subscriberCount": "48000"
+      }
+    },
+    "yt_spill_mid": {
+      "id": "yt_spill_mid",
+      "snippet": {
+        "channelId": "UC_spill_mid",
+        "title": "Riverside case notes",
+        "publishedAt": "2025-02-01T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "41000",
+        "subscriberCount": "24000"
+      }
+    },
+    "yt_spill_mid_2": {
+      "id": "yt_spill_mid_2",
+      "snippet": {
+        "channelId": "UC_spill_mid",
+        "title": "Second video from the same unknown channel",
+        "publishedAt": "2025-05-01T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "22000",
+        "subscriberCount": "24000"
+      }
+    },
+    "yt_spill_floor": {
+      "id": "yt_spill_floor",
+      "snippet": {
+        "channelId": "UC_spill_floor",
+        "title": "Floor band channel",
+        "publishedAt": "2025-03-01T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "20000",
+        "subscriberCount": "2000"
+      }
+    },
+    "yt_too_small": {
+      "id": "yt_too_small",
+      "snippet": {
+        "channelId": "UC_too_small",
+        "title": "Below the 2K band",
+        "publishedAt": "2025-03-02T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "19000",
+        "subscriberCount": "1999"
+      }
+    },
+    "yt_spill_ceil": {
+      "id": "yt_spill_ceil",
+      "snippet": {
+        "channelId": "UC_spill_ceil",
+        "title": "Ceiling band channel",
+        "publishedAt": "2025-04-01T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "99000",
+        "subscriberCount": "120000"
+      }
+    },
+    "yt_too_big": {
+      "id": "yt_too_big",
+      "snippet": {
+        "channelId": "UC_too_big",
+        "title": "Graduated past 120K",
+        "publishedAt": "2025-04-02T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "150000",
+        "subscriberCount": "120001"
+      }
+    },
+    "yt_hidden": {
+      "id": "yt_hidden",
+      "snippet": {
+        "channelId": "UC_hidden",
+        "title": "Hidden subscriber count",
+        "publishedAt": "2025-05-02T00:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "30000",
+        "hiddenSubscriberCount": true,
+        "subscriberCount": "50000"
+      }
+    }
+  }
+}
