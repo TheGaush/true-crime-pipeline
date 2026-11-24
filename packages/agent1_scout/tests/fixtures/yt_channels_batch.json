@@ -1,0 +1,164 @@
+{
+  "kind": "youtube#channelListResponse",
+  "etag": "recorded-offline-yt-channels-batch",
+  "pageInfo": {
+    "totalResults": 8,
+    "resultsPerPage": 50
+  },
+  "items": [
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-in-band",
+      "id": "UC1111111111111111111111",
+      "snippet": {
+        "title": "Lake County Cold Cases",
+        "description": "Long-form true crime documentaries.",
+        "publishedAt": "2018-04-02T15:00:00Z"
+      },
+      "statistics": {
+        "viewCount": "1200000",
+        "subscriberCount": "45000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "86"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "PLnotanuploadsplaylist01"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-band-floor",
+      "id": "UC2222222222222222222222",
+      "snippet": {
+        "title": "Band Floor Documentaries",
+        "publishedAt": "2019-01-01T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "2000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "40"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU2222222222222222222222"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-band-ceiling",
+      "id": "UC3333333333333333333333",
+      "snippet": {
+        "title": "Band Ceiling Documentaries",
+        "publishedAt": "2017-06-01T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "120000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "210"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU3333333333333333333333"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-below-band",
+      "id": "UC4444444444444444444444",
+      "snippet": {
+        "title": "Tiny Town Archive",
+        "publishedAt": "2020-02-02T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "1500",
+        "hiddenSubscriberCount": false,
+        "videoCount": "12"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU4444444444444444444444"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-graduated",
+      "id": "UC5555555555555555555555",
+      "snippet": {
+        "title": "Mega Network",
+        "publishedAt": "2014-08-08T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "250000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "900"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU5555555555555555555555"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-hidden-subs",
+      "id": "UC6666666666666666666666",
+      "snippet": {
+        "title": "Hidden Subs Channel",
+        "publishedAt": "2021-03-03T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "80000",
+        "hiddenSubscriberCount": true,
+        "videoCount": "30"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU6666666666666666666666"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-not-uc",
+      "id": "XX7777777777777777777777",
+      "snippet": {
+        "title": "Not A Uc Channel",
+        "publishedAt": "2022-04-04T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "9000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "15"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "XU7777777777777777777777"
+        }
+      }
+    },
+    {
+      "kind": "youtube#channel",
+      "etag": "recorded-missing-name",
+      "id": "UC8888888888888888888888",
+      "snippet": {
+        "title": "",
+        "publishedAt": "2023-05-05T00:00:00Z"
+      },
+      "statistics": {
+        "subscriberCount": "9000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "4"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU8888888888888888888888"
+        }
+      }
+    }
+  ]
+}

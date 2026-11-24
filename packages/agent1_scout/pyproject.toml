@@ -1,7 +1,7 @@
 [project]
 name = "tc-agent1-scout"
 version = "0.0.0"
-description = "Empty Task 001 shell. No business logic."
+description = "Agent 1 dynamic YouTube channel watchlist seeder and pruner."
 requires-python = ">=3.12"
 dependencies = []
 
@@ -14,3 +14,8 @@ packages = ["agent1_scout"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src" = ""
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
