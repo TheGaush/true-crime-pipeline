@@ -1,23 +1,25 @@
-"""SQLite repositories for the true-crime pipeline (Task 013 entropy slice)."""
+"""Telemetry cost logger. Import ``TelemetryCostLogger`` from this package."""
 
-from .entropy_repo import (
-    ArchetypePerformanceAggregate,
-    EntropyAndAnalyticsRepository,
-    EpisodeAnalyticsSnapshot,
-    FeedbackMetric,
-    PublishedEntropyRecord,
-    ScoutingTrack,
-    extract_named_query,
-    load_named_query,
+from .telemetry_repo import (
+    CachedTokensExceedTotal,
+    EpisodeSpend,
+    InvalidRates,
+    InvalidUsage,
+    LoggedUsage,
+    MissingRate,
+    TelemetryCostError,
+    TelemetryCostLogger,
+    UnknownModel,
 )
 
 __all__ = [
-    "ArchetypePerformanceAggregate",
-    "EntropyAndAnalyticsRepository",
-    "EpisodeAnalyticsSnapshot",
-    "FeedbackMetric",
-    "PublishedEntropyRecord",
-    "ScoutingTrack",
-    "extract_named_query",
-    "load_named_query",
+    "CachedTokensExceedTotal",
+    "EpisodeSpend",
+    "InvalidRates",
+    "InvalidUsage",
+    "LoggedUsage",
+    "MissingRate",
+    "TelemetryCostError",
+    "TelemetryCostLogger",
+    "UnknownModel",
 ]

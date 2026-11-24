@@ -1,22 +1,22 @@
 [project]
-name = "true-crime-pipeline-db"
-version = "0.0.0"
-description = "SQLite repositories for the true-crime documentary pipeline (Task 013 slice)"
+name = "pipeline-db"
+version = "0.0.1"
+description = "Config-driven telemetry.db cost and cache-hit logger"
 requires-python = ">=3.11"
+dependencies = ["pyyaml"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8"]
 
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["entropy_repo"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+package-dir = {"db" = "src"}
+packages = ["db"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-p no:cacheprovider"

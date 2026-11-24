@@ -1,0 +1,18 @@
+# Test fixture rates for TelemetryCostLogger.
+# Integer micro-USD per billable unit. The logger reads this file (or any
+# other path passed in). It does not contain these numbers itself.
+# zero_cache_input_micro_usd_per_token is the DeepSeek 0% cache input rate.
+# cached_input_micro_usd_per_token is the best-effort cached input rate.
+# video_micro_usd_per_second for gemini-omni-1.2-flash is the conservative
+# plan: 100000 micro-USD per second.
+models:
+  DeepSeek-V4.1-Flash-1017:
+    zero_cache_input_micro_usd_per_token: 28
+    cached_input_micro_usd_per_token: 7
+    output_micro_usd_per_token: 42
+  gemini-3.8-flash-tts:
+    audio_micro_usd_per_token: 11
+  gemini-omni-1.2-flash:
+    video_micro_usd_per_second: 100000
+  gemini-image:
+    vision_micro_usd_per_image: 13
