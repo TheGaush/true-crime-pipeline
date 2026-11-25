@@ -153,7 +153,8 @@ def test_live_episode_renders_each_scene_in_blender(tmp_path: Path, monkeypatch)
 
     receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask, blender_bin=str(fake))
     script = (tmp_path / "blender" / "scene-2.py").read_text(encoding="utf8")
-    assert "BLENDER_EEVEE" in script
+    assert "BLENDER_WORKBENCH" in script
+    assert "to_track_quat" in script
     assert 'media_type = "VIDEO"' in script
     assert (tmp_path / "scene-2-picture.mp4.kit").read_text(encoding="utf8") == "porch"
     assert receipt["renderer"] == "blender"

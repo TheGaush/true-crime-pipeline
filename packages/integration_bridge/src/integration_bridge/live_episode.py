@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from integration_bridge.blender_scene import choose_kit, find_blender, render_with_blender
+from integration_bridge.blender_scene import PICTURE_VERSION, choose_kit, find_blender, render_with_blender
 from integration_bridge.mvp_slice import REPO, screen_narration
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
@@ -358,7 +358,9 @@ def _blender_picture(binary: str, out_dir: Path, index: int, scene: dict, voice:
     kit = choose_kit(scene)
     seconds = min(30.0, max(2.0, _duration(voice) + 0.25))
     picture = out_dir / f"scene-{index}-picture.mp4"
-    if _long_enough(picture) and _duration(picture) + 0.05 >= seconds:
+    stamp = picture.with_suffix(".stamp")
+    fresh = stamp.is_file() and stamp.read_text(encoding="utf8").strip() == PICTURE_VERSION
+    if fresh and _long_enough(picture) and _duration(picture) + 0.05 >= seconds:
         print(f"Scene {index} of {SCENE_COUNT}: using the 3D picture already rendered.", flush=True)
         return picture
     print(f"Scene {index} of {SCENE_COUNT}: rendering the 3D picture in Blender ({kit}).", flush=True)
@@ -366,6 +368,7 @@ def _blender_picture(binary: str, out_dir: Path, index: int, scene: dict, voice:
         render_with_blender(binary, out_dir / "blender" / f"scene-{index}.py", picture, seconds, kit)
     except RuntimeError as exc:
         raise LiveError(str(exc)) from exc
+    stamp.write_text(PICTURE_VERSION + "\n", encoding="utf8")
     return picture
 
 
