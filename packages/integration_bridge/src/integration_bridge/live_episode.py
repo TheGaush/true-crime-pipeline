@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import shutil
 import ssl
 import subprocess
 import urllib.error
@@ -47,8 +48,8 @@ def load_env(directory: Path) -> None:
             os.environ[name] = value
 
 
-def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = None) -> dict:
-    """Write a 1080p illustrated episode. The caller uploads it in YouTube Studio."""
+def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = None, ask_image=None) -> dict:
+    """Write a 1080p episode. You supply each picture. DeepSeek writes the script and Gemini speaks it."""
     if env_dir is not None:
         load_env(env_dir)
     else:
@@ -60,6 +61,7 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
     deepseek = _key("DEEPSEEK_API_KEY")
     gemini = _key("GEMINI_API_KEY")
     transport = post or http_post
+    ask = ask_image or _ask_image_path
     out_dir.mkdir(parents=True, exist_ok=True)
     scenes = _saved_scenes(out_dir, topic)
     if scenes is None:
@@ -68,13 +70,19 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
         (out_dir / "script.json").write_text(json.dumps({"topic": topic, "scenes": scenes}, indent=2), encoding="utf8")
     else:
         print("Using the script already saved in this folder.", flush=True)
+    briefs = [format_image_request(index, scene) for index, scene in enumerate(scenes, start=1)]
+    brief_file = out_dir / "image-briefs.txt"
+    brief_file.write_text("\n\n".join(briefs) + "\n", encoding="utf8")
+    print(
+        "You make the pictures. For each scene I describe the kind of image and show the prompt to paste into your image tool.\n"
+        f"All {SCENE_COUNT} prompts are also saved in {brief_file}",
+        flush=True,
+    )
     clips: list[Path] = []
     for index, scene in enumerate(scenes, start=1):
-        print(f"Scene {index} of {SCENE_COUNT}: picture and voice.", flush=True)
-        picture = illustrate(transport, gemini, scene["image_prompt"])
-        image = out_dir / f"scene-{index}{_picture_suffix(picture)}"
+        image = take_picture(out_dir, index, scene, ask)
+        print(f"Scene {index} of {SCENE_COUNT}: speaking the line.", flush=True)
         voice = out_dir / f"scene-{index}.wav"
-        image.write_bytes(picture)
         voice.write_bytes(narrate(transport, gemini, scene["narration"]))
         clip = out_dir / f"scene-{index}.mp4"
         render_scene(image, voice, clip, scene["heading"])
@@ -87,8 +95,9 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
         "title": scenes[0]["heading"],
         "topic": topic,
         "scenes": [scene["heading"] for scene in scenes],
-        "calls": {"deepseek": 1, "gemini_image": SCENE_COUNT, "gemini_tts": SCENE_COUNT},
+        "calls": {"deepseek": 1, "gemini_image": 0, "gemini_tts": SCENE_COUNT, "user_images": SCENE_COUNT},
         "master": str(master),
+        "image_briefs": str(brief_file),
         "upload": "Upload master.mp4 yourself in YouTube Studio and mark the film as altered or synthetic.",
     }
 
@@ -164,6 +173,94 @@ def _saved_scenes(out_dir: Path, topic: str) -> list[dict] | None:
             return None
         screen_narration(narration)
     return scenes
+
+
+def format_image_request(index: int, scene: dict) -> str:
+    """The text shown when this scene is waiting for a picture."""
+    return (
+        f"Scene {index} of {SCENE_COUNT} — {scene['heading']}\n"
+        "\n"
+        "Kind of image needed:\n"
+        "  A wide 16:9 editorial illustration, like a diagram in a case file.\n"
+        "  Clear shapes, easy to read on a television. An illustration, not a photo of a real person.\n"
+        "  Leave out photorealistic faces, gore, logos, and brand names.\n"
+        "\n"
+        "What this scene is saying:\n"
+        f"  {scene['narration']}\n"
+        "\n"
+        "Prompt to paste into your image tool:\n"
+        f"  {scene['image_prompt']}\n"
+        "\n"
+        "Save the picture as a .jpg or .png, then type its full path below."
+    )
+
+
+def take_picture(out_dir: Path, index: int, scene: dict, ask) -> Path:
+    """Show the brief and copy the picture the person provides."""
+    existing = _existing_still(out_dir, index)
+    brief = format_image_request(index, scene)
+    if existing is not None:
+        brief += f"\n\nA picture is already saved as {existing.name}. Press Enter to use it, or type a new path."
+    while True:
+        try:
+            answer = ask(brief)
+        except EOFError as exc:
+            raise LiveError(f"Scene {index} is still waiting for an image path.") from exc
+        if not str(answer).strip() and existing is not None:
+            print(f"Using {existing.name} for scene {index}.", flush=True)
+            return existing
+        try:
+            source = _picture_file(answer)
+        except LiveError as exc:
+            print(str(exc), flush=True)
+            continue
+        header = source.read_bytes()[:8]
+        suffix = ".jpg" if header.startswith(b"\xff\xd8") else ".png"
+        destination = out_dir / f"scene-{index}{suffix}"
+        for other in (".jpg", ".jpeg", ".png"):
+            leftover = out_dir / f"scene-{index}{other}"
+            if leftover != destination and leftover.is_file():
+                leftover.unlink()
+        shutil.copyfile(source, destination)
+        print(f"Using {destination.name} for scene {index}.", flush=True)
+        return destination
+
+
+def _existing_still(out_dir: Path, index: int) -> Path | None:
+    for suffix in (".jpg", ".jpeg", ".png"):
+        candidate = out_dir / f"scene-{index}{suffix}"
+        if candidate.is_file() and _is_picture(candidate):
+            return candidate
+    return None
+
+
+def _is_picture(path: Path) -> bool:
+    header = path.read_bytes()[:8]
+    return header.startswith(b"\xff\xd8") or header.startswith(b"\x89PNG")
+
+
+def _ask_image_path(message: str) -> str:
+    print(f"\n{message}", flush=True)
+    return input("Path to the image: ")
+
+
+def _picture_file(answer: str) -> Path:
+    if not str(answer).strip():
+        raise LiveError("Type the full path to a .jpg or .png file.")
+    path = _clean_path(str(answer))
+    if not path.is_file():
+        raise LiveError(f"No file at {path}. Type the full path to the picture.")
+    if not _is_picture(path):
+        raise LiveError(f"{path.name} is not a JPEG or PNG. Export the picture as .jpg or .png and try again.")
+    return path
+
+
+def _clean_path(answer: str) -> Path:
+    text = answer.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+        text = text[1:-1]
+    text = text.replace("\\ ", " ")
+    return Path(text).expanduser()
 
 
 def _picture_suffix(picture: bytes) -> str:

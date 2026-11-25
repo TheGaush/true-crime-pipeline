@@ -10,7 +10,16 @@ import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
-from integration_bridge.live_episode import LiveError, _reach_error, _ssl_context, load_env, run_live
+from integration_bridge.live_episode import (
+    LiveError,
+    _picture_file,
+    _reach_error,
+    _ssl_context,
+    format_image_request,
+    load_env,
+    run_live,
+    take_picture,
+)
 
 TOPIC = "How a public record becomes an illustrated explainer"
 
@@ -42,29 +51,76 @@ def test_live_refuses_before_any_call_when_a_key_is_missing(tmp_path: Path, monk
         run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path)
 
 
-def test_live_episode_builds_a_picture_and_a_voice(tmp_path: Path, monkeypatch):
+def test_image_request_names_the_kind_of_picture_and_the_prompt():
+    scene = _scenes()[0]
+    brief = format_image_request(1, scene)
+    assert "Kind of image needed" in brief
+    assert "16:9" in brief
+    assert "not a photo of a real person" in brief
+    assert "Prompt to paste into your image tool" in brief
+    assert "parchment desk" in brief
+    assert scene["narration"] in brief
+
+
+def test_picture_file_rejects_a_missing_path_and_accepts_a_quoted_png(tmp_path: Path):
+    picture = tmp_path / "My still.png"
+    picture.write_bytes(_png())
+    with pytest.raises(LiveError, match="No file"):
+        _picture_file(str(tmp_path / "missing.png"))
+    found = _picture_file(f'"{picture}"')
+    assert found == picture
+
+
+def test_enter_keeps_a_picture_already_saved(tmp_path: Path):
+    saved = tmp_path / "scene-1.png"
+    saved.write_bytes(_png())
+    asked: list[str] = []
+
+    def ask(message: str) -> str:
+        asked.append(message)
+        return ""
+
+    kept = take_picture(tmp_path, 1, _scenes()[0], ask)
+    assert kept == saved
+    assert "Kind of image needed" in asked[0]
+    assert "already saved as scene-1.png" in asked[0]
+
+
+def test_live_episode_asks_for_each_picture_and_speaks_the_lines(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek")
     monkeypatch.setenv("GEMINI_API_KEY", "gemini")
-    picture = _png()
+    picture = tmp_path / "provided.png"
+    picture.write_bytes(_png())
+    note = tmp_path / "notes.txt"
+    note.write_text("not a picture", encoding="utf8")
     spoken = _wav()
     calls: list[str] = []
+    asked: list[str] = []
+    answers = iter([str(note), str(picture)] + [str(picture)] * 5)
 
     def post(url, headers, body, timeout):
         calls.append(body.get("model") or url)
         if "deepseek.com" in url:
             assert headers["Authorization"] == "Bearer deepseek"
             return {"choices": [{"message": {"content": json.dumps({"scenes": _scenes()})}}]}
-        if body.get("model") == "gemini-3.1-flash-lite-image":
-            assert body["response_format"]["mime_type"] == "image/jpeg"
-        encoded = base64.b64encode(spoken if "tts" in body["model"] else picture).decode("ascii")
-        kind = "audio" if "tts" in body["model"] else "image"
-        mime = "audio/wav" if kind == "audio" else "image/png"
-        return {"steps": [{"type": "model_output", "content": [{"type": kind, "mime_type": mime, "data": encoded}]}]}
+        assert "tts" in body["model"]
+        encoded = base64.b64encode(spoken).decode("ascii")
+        return {"steps": [{"type": "model_output", "content": [{"type": "audio", "mime_type": "audio/wav", "data": encoded}]}]}
 
-    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path)
+    def ask(message: str) -> str:
+        asked.append(message)
+        return next(answers)
+
+    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask)
     assert calls[0] == "deepseek-flash"
     assert calls.count("gemini-3.8-flash-tts") == 6
-    assert calls.count("gemini-3.1-flash-lite-image") == 6
+    assert "gemini-3.1-flash-lite-image" not in calls
+    assert len(asked) == 7
+    assert "Kind of image needed" in asked[0]
+    assert "Prompt to paste into your image tool" in asked[0]
+    assert "parchment desk" in (tmp_path / "image-briefs.txt").read_text(encoding="utf8")
+    assert receipt["calls"]["user_images"] == 6
+    assert receipt["calls"]["gemini_image"] == 0
     master = Path(receipt["master"])
     assert master.is_file()
     probe = subprocess.run(
