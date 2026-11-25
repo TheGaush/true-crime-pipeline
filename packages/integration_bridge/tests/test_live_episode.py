@@ -19,6 +19,7 @@ from integration_bridge.live_episode import (
     load_env,
     run_live,
     take_picture,
+    _has_filter,
 )
 
 TOPIC = "How a public record becomes an illustrated explainer"
@@ -69,6 +70,38 @@ def test_picture_file_rejects_a_missing_path_and_accepts_a_quoted_png(tmp_path: 
         _picture_file(str(tmp_path / "missing.png"))
     found = _picture_file(f'"{picture}"')
     assert found == picture
+
+
+def test_ffmpeg_filter_list_names_scale_and_ignores_an_unknown_filter():
+    assert _has_filter("scale") is True
+    assert _has_filter("not-a-real-filter") is False
+
+
+def test_scene_renders_when_ffmpeg_has_no_drawtext(tmp_path: Path, monkeypatch, capsys):
+    import integration_bridge.live_episode as live
+
+    monkeypatch.setattr(live, "_has_filter", lambda _name: False)
+    monkeypatch.setattr(live, "_drawtext_note_sent", False)
+    image = tmp_path / "plate.png"
+    image.write_bytes(_png())
+    voice = tmp_path / "line.wav"
+    voice.write_bytes(_wav())
+    clip = tmp_path / "scene.mp4"
+    live.render_scene(image, voice, clip, "Synthetic Media Warning")
+    assert clip.is_file() and clip.stat().st_size > 1000
+    assert "drawtext" not in live._scene_filter("Synthetic Media Warning")
+    assert "without the drawtext filter" in capsys.readouterr().out
+
+
+def test_caption_is_drawn_when_drawtext_is_available(monkeypatch):
+    import integration_bridge.live_episode as live
+
+    monkeypatch.setattr(live, "_has_filter", lambda _name: True)
+    monkeypatch.setattr(live, "_font", lambda: "/Library/Fonts/Arial.ttf")
+    text = live._scene_filter("Porch camera")
+    assert "drawtext" in text
+    assert "Porch camera" in text
+    assert "Synthetic voice and pictures" in text
 
 
 def test_enter_keeps_a_picture_already_saved(tmp_path: Path):
