@@ -10,7 +10,7 @@ import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
-from integration_bridge.live_episode import LiveError, load_env, run_live
+from integration_bridge.live_episode import LiveError, _reach_error, _ssl_context, load_env, run_live
 
 TOPIC = "How a public record becomes an illustrated explainer"
 
@@ -22,6 +22,13 @@ def test_env_file_does_not_replace_a_variable(tmp_path: Path, monkeypatch):
     load_env(tmp_path)
     assert os.environ["DEEPSEEK_API_KEY"] == "already"
     assert os.environ["GEMINI_API_KEY"] == "studio"
+
+
+def test_mac_certificate_error_names_the_fix():
+    message = _reach_error("api.deepseek.com", Exception("[SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer certificate"))
+    assert "python3 -m pip install certifi" in message
+    assert "Install Certificates.command" in message
+    assert _ssl_context() is not None
 
 
 def test_live_refuses_before_any_call_when_a_key_is_missing(tmp_path: Path, monkeypatch):

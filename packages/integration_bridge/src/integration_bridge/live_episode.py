@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import ssl
 import subprocess
 import urllib.error
 import urllib.request
@@ -250,15 +251,53 @@ def http_post(url: str, headers: dict, body: dict, timeout: int) -> dict:
         headers=headers,
         method="POST",
     )
+    host = url.split("/")[2]
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout, context=_ssl_context()) as response:
             return json.loads(response.read().decode("utf8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:600]
-        host = url.split("/")[2]
         raise LiveError(f"{host} returned HTTP {exc.code}: {detail}") from exc
     except urllib.error.URLError as exc:
-        raise LiveError(f"Could not reach {url.split('/')[2]}: {exc.reason}") from exc
+        raise LiveError(_reach_error(host, exc.reason)) from exc
+
+
+def _ssl_context() -> ssl.SSLContext:
+    """Use a real CA bundle. The python.org Mac installer ships without one."""
+    cafile = _ca_file()
+    if cafile is None:
+        return ssl.create_default_context()
+    return ssl.create_default_context(cafile=cafile)
+
+
+def _ca_file() -> str | None:
+    try:
+        import certifi
+    except ImportError:
+        certifi = None
+    else:
+        bundle = certifi.where()
+        if Path(bundle).is_file():
+            return bundle
+    env_file = os.environ.get("SSL_CERT_FILE", "").strip()
+    candidates = [env_file, "/etc/ssl/cert.pem", "/private/etc/ssl/cert.pem"]
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return candidate
+    return None
+
+
+def _reach_error(host: str, reason: object) -> str:
+    text = str(reason)
+    if "CERTIFICATE_VERIFY_FAILED" in text:
+        return (
+            f"Python could not verify the certificate for {host}. "
+            "The API key was not sent. On the Mac, run this once, then run the live command again:\n"
+            "  python3 -m pip install certifi\n"
+            "If Python came from python.org, this also works:\n"
+            "  open \"/Applications/Python 3.12/Install Certificates.command\""
+        )
+    return f"Could not reach {host}: {reason}"
 
 
 def _gemini(post, api_key: str, body: dict) -> dict:
