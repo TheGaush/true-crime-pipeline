@@ -12,6 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from integration_bridge.blender_scene import choose_kit, find_blender, render_with_blender
 from integration_bridge.mvp_slice import REPO, screen_narration
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
@@ -48,8 +49,16 @@ def load_env(directory: Path) -> None:
             os.environ[name] = value
 
 
-def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = None, ask_image=None) -> dict:
-    """Write a 1080p episode. You supply each picture. DeepSeek writes the script and Gemini speaks it."""
+def run_live(
+    out_dir: Path,
+    topic: str,
+    *,
+    post=None,
+    env_dir: Path | None = None,
+    ask_image=None,
+    blender_bin: str | None = None,
+) -> dict:
+    """Write a 1080p episode. Blender builds each picture when it is installed. Gemini speaks."""
     if env_dir is not None:
         load_env(env_dir)
     else:
@@ -62,6 +71,7 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
     gemini = _key("GEMINI_API_KEY")
     transport = post or http_post
     ask = ask_image or _ask_image_path
+    blender = find_blender() if blender_bin is None else (blender_bin or None)
     out_dir.mkdir(parents=True, exist_ok=True)
     scenes = _saved_scenes(out_dir, topic)
     if scenes is None:
@@ -70,22 +80,39 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
         (out_dir / "script.json").write_text(json.dumps({"topic": topic, "scenes": scenes}, indent=2), encoding="utf8")
     else:
         print("Using the script already saved in this folder.", flush=True)
-    briefs = [format_image_request(index, scene) for index, scene in enumerate(scenes, start=1)]
     brief_file = out_dir / "image-briefs.txt"
-    brief_file.write_text("\n\n".join(briefs) + "\n", encoding="utf8")
-    print(
-        "You make the pictures. For each scene I describe the kind of image and show the prompt to paste into your image tool.\n"
-        f"All {SCENE_COUNT} prompts are also saved in {brief_file}",
-        flush=True,
-    )
+    if blender:
+        print(
+            f"Blender is connected: {blender}\n"
+            "Each scene is a simple 3D picture. A MacBook Air needs a few minutes for each one.",
+            flush=True,
+        )
+    else:
+        briefs = [format_image_request(index, scene) for index, scene in enumerate(scenes, start=1)]
+        brief_file.write_text("\n\n".join(briefs) + "\n", encoding="utf8")
+        print(
+            "Blender is not installed, so you make the pictures.\n"
+            f"All {SCENE_COUNT} prompts are also saved in {brief_file}",
+            flush=True,
+        )
     clips: list[Path] = []
+    spoken = 0
     for index, scene in enumerate(scenes, start=1):
-        image = take_picture(out_dir, index, scene, ask)
-        print(f"Scene {index} of {SCENE_COUNT}: speaking the line.", flush=True)
         voice = out_dir / f"scene-{index}.wav"
-        voice.write_bytes(narrate(transport, gemini, scene["narration"]))
-        clip = out_dir / f"scene-{index}.mp4"
-        render_scene(image, voice, clip, scene["heading"])
+        if _long_enough(voice):
+            print(f"Scene {index} of {SCENE_COUNT}: using the voice already saved.", flush=True)
+        else:
+            print(f"Scene {index} of {SCENE_COUNT}: speaking the line.", flush=True)
+            voice.write_bytes(narrate(transport, gemini, scene["narration"]))
+            spoken += 1
+        if blender:
+            picture = _blender_picture(blender, out_dir, index, scene, voice)
+            clip = out_dir / f"scene-{index}.mp4"
+            render_motion(picture, voice, clip, scene["heading"])
+        else:
+            image = take_picture(out_dir, index, scene, ask)
+            clip = out_dir / f"scene-{index}.mp4"
+            render_scene(image, voice, clip, scene["heading"])
         clips.append(clip)
     master = out_dir / "master.mp4"
     print("Mixing the episode.", flush=True)
@@ -95,7 +122,14 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
         "title": scenes[0]["heading"],
         "topic": topic,
         "scenes": [scene["heading"] for scene in scenes],
-        "calls": {"deepseek": 1, "gemini_image": 0, "gemini_tts": SCENE_COUNT, "user_images": SCENE_COUNT},
+        "renderer": "blender" if blender else "stills",
+        "calls": {
+            "deepseek": 1,
+            "gemini_image": 0,
+            "gemini_tts": spoken,
+            "user_images": 0 if blender else SCENE_COUNT,
+            "blender_scenes": SCENE_COUNT if blender else 0,
+        },
         "master": str(master),
         "image_briefs": str(brief_file),
         "upload": "Upload master.mp4 yourself in YouTube Studio and mark the film as altered or synthetic.",
@@ -318,6 +352,50 @@ def narrate(post, api_key: str, text: str) -> bytes:
     if "l16" in mime or "pcm" in mime or not mime:
         return _pcm_wav(data, 24000)
     return data
+
+
+def _blender_picture(binary: str, out_dir: Path, index: int, scene: dict, voice: Path) -> Path:
+    kit = choose_kit(scene)
+    seconds = min(30.0, max(2.0, _duration(voice) + 0.25))
+    picture = out_dir / f"scene-{index}-picture.mp4"
+    if _long_enough(picture) and _duration(picture) + 0.05 >= seconds:
+        print(f"Scene {index} of {SCENE_COUNT}: using the 3D picture already rendered.", flush=True)
+        return picture
+    print(f"Scene {index} of {SCENE_COUNT}: rendering the 3D picture in Blender ({kit}).", flush=True)
+    try:
+        render_with_blender(binary, out_dir / "blender" / f"scene-{index}.py", picture, seconds, kit)
+    except RuntimeError as exc:
+        raise LiveError(str(exc)) from exc
+    return picture
+
+
+def _long_enough(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size < 800:
+        return False
+    try:
+        return _duration(path) >= 0.4
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return False
+
+
+def render_motion(video: Path, voice: Path, clip: Path, heading: str) -> None:
+    """Lay the spoken line on a moving picture."""
+    duration = _duration(voice)
+    if duration < 0.4:
+        raise LiveError(f"{voice.name} is too short to be a scene.")
+    command = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-i", str(video),
+        "-i", str(voice),
+        "-t", f"{duration:.3f}",
+        "-vf", _scene_filter(heading),
+        "-r", "30",
+        "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "160k",
+        "-shortest",
+        str(clip),
+    ]
+    _ffmpeg(command)
 
 
 def render_scene(image: Path, voice: Path, clip: Path, heading: str) -> None:
