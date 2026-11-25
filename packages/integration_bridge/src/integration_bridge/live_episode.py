@@ -324,17 +324,7 @@ def render_scene(image: Path, voice: Path, clip: Path, heading: str) -> None:
     duration = _duration(voice)
     if duration < 0.4:
         raise LiveError(f"{voice.name} is too short to be a scene.")
-    video_filter = "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080"
-    font = _font()
-    if font is not None:
-        label = _filter_text(heading)
-        disclosure = _filter_text("Illustrative reconstruction. Synthetic voice and pictures.")
-        video_filter += (
-            f",drawtext=fontfile={font}:text='{label}':fontsize=42:fontcolor=white:"
-            "x=48:y=h-140:box=1:boxcolor=black@0.55:boxborderw=12"
-            f",drawtext=fontfile={font}:text='{disclosure}':fontsize=24:fontcolor=white:"
-            "x=48:y=h-78:box=1:boxcolor=black@0.55:boxborderw=10"
-        )
+    video_filter = _scene_filter(heading)
     command = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-loop", "1", "-framerate", "30", "-i", str(image),
@@ -516,6 +506,53 @@ def _heading(value: str, index: int) -> str:
     cleaned = "".join(character if character.isalnum() or character == " " else " " for character in value)
     cleaned = " ".join(cleaned.split())[:32]
     return cleaned or f"Scene {index + 1}"
+
+
+def _scene_filter(heading: str) -> str:
+    video_filter = "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080"
+    font = _font()
+    if font is None:
+        return video_filter
+    if not _has_filter("drawtext"):
+        _note_missing_drawtext()
+        return video_filter
+    label = _filter_text(heading)
+    disclosure = _filter_text("Illustrative reconstruction. Synthetic voice and pictures.")
+    return video_filter + (
+        f",drawtext=fontfile={font}:text='{label}':fontsize=42:fontcolor=white:"
+        "x=48:y=h-140:box=1:boxcolor=black@0.55:boxborderw=12"
+        f",drawtext=fontfile={font}:text='{disclosure}':fontsize=24:fontcolor=white:"
+        "x=48:y=h-78:box=1:boxcolor=black@0.55:boxborderw=10"
+    )
+
+
+_drawtext_note_sent = False
+
+
+def _note_missing_drawtext() -> None:
+    global _drawtext_note_sent
+    if _drawtext_note_sent:
+        return
+    _drawtext_note_sent = True
+    print(
+        "This ffmpeg was built without the drawtext filter, so the heading stays off the picture. "
+        "The picture and the voice are still in the scene.",
+        flush=True,
+    )
+
+
+def _has_filter(name: str) -> bool:
+    cached = _FILTERS.get(name)
+    if cached is not None:
+        return cached
+    result = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True)
+    listing = f"{result.stdout}\n{result.stderr}"
+    found = any(len(parts) >= 2 and parts[1] == name for parts in (line.split() for line in listing.splitlines()))
+    _FILTERS[name] = found
+    return found
+
+
+_FILTERS: dict[str, bool] = {}
 
 
 def _filter_text(value: str) -> str:
