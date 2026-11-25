@@ -8,12 +8,14 @@ import subprocess
 from pathlib import Path
 
 KITS = ("overview", "porch", "document", "merge", "desk", "scale")
+PICTURE_VERSION = "2"
 
 BLENDER_SCRIPT = r'''
 import math
 import sys
 
 import bpy
+from mathutils import Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 
@@ -39,22 +41,24 @@ scene.render.fps = fps
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100
-scene.render.engine = "BLENDER_EEVEE"
+scene.render.engine = "BLENDER_WORKBENCH"
+shading = scene.display.shading
+shading.light = "FLAT"
+shading.color_type = "MATERIAL"
 try:
-    scene.eevee.taa_render_samples = 8
-except AttributeError:
-    pass
-try:
-    scene.eevee.use_raytracing = False
+    shading.background_type = "VIEWPORT"
+    shading.background_color = (0.62, 0.66, 0.70)
 except AttributeError:
     pass
 
 
 def material(name, rgb):
     made = bpy.data.materials.new(name)
-    node = made.node_tree.nodes.get("Principled BSDF")
-    node.inputs["Base Color"].default_value = (rgb[0], rgb[1], rgb[2], 1)
-    node.inputs["Roughness"].default_value = 0.55
+    made.diffuse_color = (rgb[0], rgb[1], rgb[2], 1)
+    node = made.node_tree.nodes.get("Principled BSDF") if made.node_tree else None
+    if node is not None:
+        node.inputs["Base Color"].default_value = (rgb[0], rgb[1], rgb[2], 1)
+        node.inputs["Roughness"].default_value = 0.55
     return made
 
 
@@ -103,7 +107,7 @@ if kit == "porch":
     cube("Camera body", (1.3, 1.95, 2.3), (0.28, 0.22, 0.22), BODY)
     cylinder("Lens", (1.3, 1.7, 2.3), (0.12, 0.12, 0.28), BRASS)
     look = (0.4, 1.4, 1.4)
-    start, end = (3.4, -8.2, 3.2), (0.8, -4.8, 2.1)
+    start, end = (2.2, -5.6, 2.5), (0.6, -3.6, 1.9)
 elif kit == "document":
     page = plane("Page", (0, 0, 0.55), (2.4, 3.2, 1), PAPER)
     page.rotation_euler = (math.radians(72), 0, 0)
@@ -111,7 +115,7 @@ elif kit == "document":
         bar = cube(f"Redaction {index + 1}", (0, height, 0.72), (1.5, 0.12, 0.04), INK)
         bar.rotation_euler = (math.radians(72), 0, 0)
     look = (0, 0, 0.7)
-    start, end = (-2.4, -6.5, 3.4), (1.6, -4.2, 2.4)
+    start, end = (-1.4, -4.0, 2.4), (1.0, -2.6, 1.7)
 elif kit == "merge":
     cube("Camera body", (-2.2, 0, 0.7), (0.5, 0.36, 0.36), BODY)
     cylinder("Lens", (-1.7, 0, 0.7), (0.16, 0.16, 0.4), BRASS)
@@ -123,7 +127,7 @@ elif kit == "merge":
     folder.location = (0, 0, 0.85)
     folder.keyframe_insert("location", frame=scene.frame_end)
     look = (0, 0, 0.7)
-    start, end = (0, -8.5, 3.6), (0, -5.2, 2.4)
+    start, end = (0.2, -5.4, 2.6), (0, -3.4, 1.8)
 elif kit == "scale":
     cube("Base", (0, 0, 0.12), (2.2, 0.7, 0.18), BODY)
     cube("Post", (0, 0, 1.15), (0.12, 0.12, 2.0), BRASS)
@@ -135,14 +139,14 @@ elif kit == "scale":
     beam.rotation_euler = (0, math.radians(7), 0)
     beam.keyframe_insert("rotation_euler", frame=scene.frame_end)
     look = (0, 0, 1.4)
-    start, end = (4.2, -7.5, 2.6), (1.2, -5.4, 1.8)
+    start, end = (2.4, -4.8, 2.2), (0.6, -3.2, 1.6)
 elif kit == "desk":
     cube("Desk", (0, 0, 0.45), (3.4, 1.6, 0.16), DOOR)
     cube("Folder", (-0.4, 0, 0.7), (1.1, 0.8, 0.22), FOLDER)
     cube("File A", (0.9, 0.2, 0.62), (0.45, 0.6, 0.12), PAPER)
     cube("File B", (1.15, -0.15, 0.74), (0.45, 0.6, 0.12), PAPER)
     look = (0, 0, 0.7)
-    start, end = (2.8, -7.2, 3.4), (0.2, -4.4, 2.2)
+    start, end = (1.6, -4.6, 2.4), (0.2, -3.0, 1.7)
 else:
     cube("Camera body", (-1.6, 0.2, 0.7), (0.46, 0.32, 0.32), BODY)
     cylinder("Lens", (-1.15, 0.2, 0.7), (0.14, 0.14, 0.36), BRASS)
@@ -150,30 +154,26 @@ else:
     page.rotation_euler = (math.radians(68), 0, 0)
     cube("Folder", (0, -0.2, 0.28), (1.0, 0.75, 0.2), FOLDER)
     look = (0, 0, 0.7)
-    start, end = (3.2, -8.0, 3.3), (0.2, -5.0, 2.2)
+    start, end = (1.8, -5.0, 2.4), (0.2, -3.2, 1.7)
 
-bpy.ops.object.empty_add(type="PLAIN_AXES", location=look)
-target = bpy.context.object
+cube("Backdrop", (look[0], look[1] + 3.2, 1.6), (9, 0.08, 4.2), WALL)
+
+
+def aim(camera, place, focus, frame):
+    camera.location = place
+    direction = Vector(focus) - Vector(place)
+    camera.rotation_euler = direction.to_track_quat("-Z", "Z").to_euler()
+    camera.keyframe_insert("location", frame=frame)
+    camera.keyframe_insert("rotation_euler", frame=frame)
+
+
 bpy.ops.object.camera_add(location=start)
 camera = bpy.context.object
 scene.camera = camera
-constraint = camera.constraints.new(type="TRACK_TO")
-constraint.target = target
-constraint.track_axis = "TRACK_NEGATIVE_Z"
-constraint.up_axis = "UP_Y"
-camera.keyframe_insert("location", frame=1)
-camera.location = end
-camera.keyframe_insert("location", frame=scene.frame_end)
-
-bpy.ops.object.light_add(type="SUN", location=(4, -5, 8))
-sun = bpy.context.object
-sun.data.energy = 3.2
-sun.rotation_euler = (math.radians(48), 0, math.radians(28))
-
-scene.world = bpy.data.worlds.new("World")
-background = scene.world.node_tree.nodes["Background"]
-background.inputs["Color"].default_value = (0.03, 0.045, 0.06, 1)
-background.inputs["Strength"].default_value = 1.0
+camera.data.lens = 35
+aim(camera, start, look, 1)
+aim(camera, end, look, scene.frame_end)
+bpy.context.view_layer.update()
 
 scene.render.filepath = out
 scene.render.image_settings.media_type = "VIDEO"
