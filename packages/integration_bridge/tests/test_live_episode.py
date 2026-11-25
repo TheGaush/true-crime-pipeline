@@ -10,7 +10,7 @@ import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
-from integration_bridge.live_episode import LiveError, load_env, run_live
+from integration_bridge.live_episode import LiveError, _reach_error, _ssl_context, load_env, run_live
 
 TOPIC = "How a public record becomes an illustrated explainer"
 
@@ -22,6 +22,13 @@ def test_env_file_does_not_replace_a_variable(tmp_path: Path, monkeypatch):
     load_env(tmp_path)
     assert os.environ["DEEPSEEK_API_KEY"] == "already"
     assert os.environ["GEMINI_API_KEY"] == "studio"
+
+
+def test_mac_certificate_error_names_the_fix():
+    message = _reach_error("api.deepseek.com", Exception("[SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer certificate"))
+    assert "python3 -m pip install certifi" in message
+    assert "Install Certificates.command" in message
+    assert _ssl_context() is not None
 
 
 def test_live_refuses_before_any_call_when_a_key_is_missing(tmp_path: Path, monkeypatch):
@@ -47,6 +54,8 @@ def test_live_episode_builds_a_picture_and_a_voice(tmp_path: Path, monkeypatch):
         if "deepseek.com" in url:
             assert headers["Authorization"] == "Bearer deepseek"
             return {"choices": [{"message": {"content": json.dumps({"scenes": _scenes()})}}]}
+        if body.get("model") == "gemini-3.1-flash-lite-image":
+            assert body["response_format"]["mime_type"] == "image/jpeg"
         encoded = base64.b64encode(spoken if "tts" in body["model"] else picture).decode("ascii")
         kind = "audio" if "tts" in body["model"] else "image"
         mime = "audio/wav" if kind == "audio" else "image/png"
