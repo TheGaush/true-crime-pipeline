@@ -61,15 +61,20 @@ def run_live(out_dir: Path, topic: str, *, post=None, env_dir: Path | None = Non
     gemini = _key("GEMINI_API_KEY")
     transport = post or http_post
     out_dir.mkdir(parents=True, exist_ok=True)
-    print("Writing the script with DeepSeek.", flush=True)
-    scenes = plan_scenes(transport, deepseek, topic)
-    (out_dir / "script.json").write_text(json.dumps({"topic": topic, "scenes": scenes}, indent=2), encoding="utf8")
+    scenes = _saved_scenes(out_dir, topic)
+    if scenes is None:
+        print("Writing the script with DeepSeek.", flush=True)
+        scenes = plan_scenes(transport, deepseek, topic)
+        (out_dir / "script.json").write_text(json.dumps({"topic": topic, "scenes": scenes}, indent=2), encoding="utf8")
+    else:
+        print("Using the script already saved in this folder.", flush=True)
     clips: list[Path] = []
     for index, scene in enumerate(scenes, start=1):
         print(f"Scene {index} of {SCENE_COUNT}: picture and voice.", flush=True)
-        image = out_dir / f"scene-{index}.png"
+        picture = illustrate(transport, gemini, scene["image_prompt"])
+        image = out_dir / f"scene-{index}{_picture_suffix(picture)}"
         voice = out_dir / f"scene-{index}.wav"
-        image.write_bytes(illustrate(transport, gemini, scene["image_prompt"]))
+        image.write_bytes(picture)
         voice.write_bytes(narrate(transport, gemini, scene["narration"]))
         clip = out_dir / f"scene-{index}.mp4"
         render_scene(image, voice, clip, scene["heading"])
@@ -137,6 +142,36 @@ def plan_scenes(post, api_key: str, topic: str) -> list[dict]:
     return cleaned
 
 
+def _saved_scenes(out_dir: Path, topic: str) -> list[dict] | None:
+    file = out_dir / "script.json"
+    if not file.is_file():
+        return None
+    try:
+        saved = json.loads(file.read_text(encoding="utf8"))
+    except json.JSONDecodeError:
+        return None
+    if saved.get("topic") != topic:
+        return None
+    scenes = saved.get("scenes")
+    if not isinstance(scenes, list) or len(scenes) != SCENE_COUNT:
+        return None
+    for scene in scenes:
+        if not isinstance(scene, dict):
+            return None
+        narration = str(scene.get("narration", "")).strip()
+        prompt = str(scene.get("image_prompt", "")).strip()
+        if len(narration.split()) < 8 or len(prompt) < 12:
+            return None
+        screen_narration(narration)
+    return scenes
+
+
+def _picture_suffix(picture: bytes) -> str:
+    if picture.startswith(b"\xff\xd8"):
+        return ".jpg"
+    return ".png"
+
+
 def illustrate(post, api_key: str, prompt: str) -> bytes:
     payload = _gemini(
         post,
@@ -146,7 +181,7 @@ def illustrate(post, api_key: str, prompt: str) -> bytes:
             "input": prompt,
             "response_format": {
                 "type": "image",
-                "mime_type": "image/png",
+                "mime_type": "image/jpeg",
                 "aspect_ratio": "16:9",
                 "image_size": "1K",
             },

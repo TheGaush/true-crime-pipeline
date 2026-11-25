@@ -54,6 +54,8 @@ def test_live_episode_builds_a_picture_and_a_voice(tmp_path: Path, monkeypatch):
         if "deepseek.com" in url:
             assert headers["Authorization"] == "Bearer deepseek"
             return {"choices": [{"message": {"content": json.dumps({"scenes": _scenes()})}}]}
+        if body.get("model") == "gemini-3.1-flash-lite-image":
+            assert body["response_format"]["mime_type"] == "image/jpeg"
         encoded = base64.b64encode(spoken if "tts" in body["model"] else picture).decode("ascii")
         kind = "audio" if "tts" in body["model"] else "image"
         mime = "audio/wav" if kind == "audio" else "image/png"
