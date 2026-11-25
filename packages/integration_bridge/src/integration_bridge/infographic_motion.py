@@ -1,61 +1,43 @@
-"""Flat illustrated scenes with motion. This is the picture used for the live film."""
+"""Sharp 1080p illustrated scenes. Shapes and type are drawn with smooth edges."""
 
 from __future__ import annotations
 
 import subprocess
 from pathlib import Path
 
-WIDTH = 1280
-HEIGHT = 720
-FPS = 12
-PICTURE_VERSION = "3"
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError as exc:  # pragma: no cover - the test machine has Pillow
+    raise RuntimeError(
+        "The sharp pictures need Pillow. On the Mac, run this once, then run the live command again:\n"
+        "  python3 -m pip install pillow"
+    ) from exc
 
-NAVY = (14, 24, 34)
-NAVY_2 = (28, 44, 58)
-CREAM = (236, 228, 210)
-INK = (22, 24, 28)
-AMBER = (214, 162, 64)
-WALL = (214, 208, 196)
-DOOR = (112, 78, 52)
-FOLDER = (176, 122, 58)
-BODY = (36, 44, 54)
-PAPER = (244, 240, 230)
-RED = (176, 48, 42)
-GREEN = (58, 122, 86)
+WIDTH = 1920
+HEIGHT = 1080
+FPS = 24
+PICTURE_VERSION = "4"
 
-# 5x7 glyphs, top row first.
-_GLYPHS = {
-    "A": "01110100011000111111100011000110001",
-    "B": "11110100011111010001100011111010000",
-    "C": "01110100011000010000100010111000000",
-    "D": "11110100011000110001100011111000000",
-    "E": "11111100001111010000100001111100000",
-    "F": "11111100001111010000100001000000000",
-    "G": "01110100011000010111100010111000000",
-    "H": "10001100011111110001100011000100000",
-    "I": "11111001000010000100001000111110000",
-    "J": "00111000100001000010100010011100000",
-    "K": "10001100101110010010100011000100000",
-    "L": "10000100001000010000100001111100000",
-    "M": "10001110111010110001100011000100000",
-    "N": "10001110011010110011100011000100000",
-    "O": "01110100011000110001100010111000000",
-    "P": "11110100011000111110100001000000000",
-    "R": "11110100011000111110101011000100000",
-    "S": "01110100001000001110000010111000000",
-    "T": "11111001000010000100001000010000000",
-    "U": "10001100011000110001100010111000000",
-    "V": "10001100011000110001010100010000000",
-    "W": "10001100011000110101101011000100000",
-    "X": "10001010100010001010100011000100000",
-    "Y": "10001010100010000100001000010000000",
-    " ": "00000000000000000000000000000000000",
-    "-": "00000000001111100000000000000000000",
-}
+NAVY = (16, 32, 48)
+SKY = (36, 64, 88)
+GROUND = (22, 36, 48)
+CREAM = (244, 236, 220)
+INK = (18, 20, 24)
+AMBER = (224, 164, 48)
+WALL = (232, 224, 208)
+DOOR = (122, 78, 48)
+FOLDER = (196, 132, 52)
+BODY = (42, 52, 64)
+PAPER = (252, 248, 240)
+BLUE = (46, 104, 158)
+GREEN = (46, 140, 96)
+GLASS = (186, 214, 224)
+
+_FONTS: dict[int, ImageFont.FreeTypeFont] = {}
 
 
 def render_infographic(out_file: Path, seconds: float, kit: str, heading: str) -> None:
-    """Draw a moving illustrated scene and save a silent mp4."""
+    """Draw a moving illustrated scene at 1080p and save a silent mp4."""
     frames = max(FPS * 2, int(round(min(seconds, 30.0) * FPS)))
     command = [
         "ffmpeg", "-y", "-loglevel", "error",
@@ -80,12 +62,12 @@ def render_infographic(out_file: Path, seconds: float, kit: str, heading: str) -
 
 
 def _frame(kit: str, heading: str, progress: float) -> bytes:
-    buffer = bytearray(WIDTH * HEIGHT * 3)
-    # The bytearray trick above repeats one byte. Fill the real background.
-    _fill(buffer, 0, 0, WIDTH, HEIGHT, NAVY)
-    _fill(buffer, 0, 560, WIDTH, 160, NAVY_2)
-    _fill(buffer, 0, 108, WIDTH, 8, AMBER)
-    _text(buffer, _label(heading), 56, 36, 4, CREAM)
+    image = Image.new("RGB", (WIDTH, HEIGHT), NAVY)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 140, WIDTH, 900), fill=SKY)
+    draw.rectangle((0, 860, WIDTH, HEIGHT), fill=GROUND)
+    draw.rectangle((0, 128, WIDTH, 140), fill=AMBER)
+    draw.text((72, 36), _label(heading), font=_font(58), fill=CREAM)
     drawer = {
         "porch": _porch,
         "document": _document,
@@ -93,51 +75,38 @@ def _frame(kit: str, heading: str, progress: float) -> bytes:
         "desk": _desk,
         "scale": _scale,
     }.get(kit, _overview)
-    drawer(buffer, progress)
-    return bytes(buffer)
+    drawer(draw, progress)
+    return image.tobytes()
+
+
+def _font(size: int) -> ImageFont.FreeTypeFont:
+    cached = _FONTS.get(size)
+    if cached is not None:
+        return cached
+    face = ImageFont.truetype(_font_file(), size)
+    _FONTS[size] = face
+    return face
+
+
+def _font_file() -> str:
+    candidates = (
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/Library/Fonts/Arial Bold.ttf",
+        "/Library/Fonts/Arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    )
+    for candidate in candidates:
+        if Path(candidate).is_file():
+            return candidate
+    raise RuntimeError("No outline font was found for the scene titles.")
 
 
 def _label(heading: str) -> str:
-    cleaned = "".join(character if character.upper() in _GLYPHS else " " for character in heading.upper())
-    return " ".join(cleaned.split())[:28] or "SCENE"
-
-
-def _fill(buffer: bytearray, x: float, y: float, width: float, height: float, color: tuple[int, int, int]) -> None:
-    x0 = max(0, int(x))
-    y0 = max(0, int(y))
-    x1 = min(WIDTH, int(x + width))
-    y1 = min(HEIGHT, int(y + height))
-    if x1 <= x0 or y1 <= y0:
-        return
-    row = bytes(color) * (x1 - x0)
-    stride = WIDTH * 3
-    for yy in range(y0, y1):
-        start = yy * stride + x0 * 3
-        buffer[start : start + len(row)] = row
-
-
-def _panel(buffer: bytearray, x: float, y: float, width: float, height: float, fill: tuple[int, int, int]) -> None:
-    _fill(buffer, x, y, width, height, INK)
-    _fill(buffer, x + 8, y + 8, width - 16, height - 16, fill)
-
-
-def _circle(buffer: bytearray, cx: float, cy: float, radius: float, color: tuple[int, int, int]) -> None:
-    radius = int(radius)
-    for dy in range(-radius, radius + 1):
-        span = int((radius * radius - dy * dy) ** 0.5)
-        _fill(buffer, cx - span, cy + dy, span * 2, 1, color)
-
-
-def _text(buffer: bytearray, text: str, x: float, y: float, scale: int, color: tuple[int, int, int]) -> None:
-    cursor = x
-    for character in text:
-        rows = _GLYPHS.get(character, _GLYPHS[" "])
-        for row_index in range(7):
-            bits = rows[row_index * 5 : row_index * 5 + 5]
-            for column, bit in enumerate(bits):
-                if bit == "1":
-                    _fill(buffer, cursor + column * scale, y + row_index * scale, scale, scale, color)
-        cursor += 6 * scale
+    cleaned = "".join(character if character.isprintable() else " " for character in heading)
+    return " ".join(cleaned.split())[:42] or "Scene"
 
 
 def _slide(start: float, end: float, progress: float, begin: float = 0.0, duration: float = 0.45) -> float:
@@ -146,92 +115,121 @@ def _slide(start: float, end: float, progress: float, begin: float = 0.0, durati
     return start + (end - start) * eased
 
 
-def _person(buffer: bytearray, x: float, y: float, scale: float = 1.0) -> None:
-    _circle(buffer, x, y, 28 * scale, CREAM)
-    _fill(buffer, x - 34 * scale, y + 30 * scale, 68 * scale, 90 * scale, (48, 86, 122))
-    _fill(buffer, x - 46 * scale, y + 40 * scale, 16 * scale, 54 * scale, CREAM)
-    _fill(buffer, x + 30 * scale, y + 40 * scale, 16 * scale, 54 * scale, CREAM)
+def _round(draw: ImageDraw.ImageDraw, box: tuple, fill: tuple, radius: int = 28) -> None:
+    draw.rounded_rectangle(box, radius=radius, fill=INK)
+    inset = 8
+    inner = (box[0] + inset, box[1] + inset, box[2] - inset, box[3] - inset)
+    draw.rounded_rectangle(inner, radius=max(8, radius - 6), fill=fill)
 
 
-def _camera_icon(buffer: bytearray, x: float, y: float) -> None:
-    _panel(buffer, x, y, 180, 120, BODY)
-    _circle(buffer, x + 90, y + 64, 28, AMBER)
-    _circle(buffer, x + 90, y + 64, 12, INK)
-    _fill(buffer, x + 24, y - 18, 48, 22, BODY)
+def _person(draw: ImageDraw.ImageDraw, x: float, y: float, scale: float = 1.0) -> None:
+    head = 34 * scale
+    draw.ellipse((x - head, y - head, x + head, y + head), fill=CREAM, outline=INK, width=8)
+    draw.ellipse((x - 12 * scale, y - 8 * scale, x - 4 * scale, y), fill=INK)
+    draw.ellipse((x + 4 * scale, y - 8 * scale, x + 12 * scale, y), fill=INK)
+    draw.arc((x - 14 * scale, y + 2 * scale, x + 14 * scale, y + 22 * scale), 20, 160, fill=INK, width=4)
+    body = (x - 42 * scale, y + 36 * scale, x + 42 * scale, y + 150 * scale)
+    draw.rounded_rectangle(body, radius=24, fill=BLUE, outline=INK, width=8)
+    draw.rounded_rectangle((x - 70 * scale, y + 48 * scale, x - 42 * scale, y + 120 * scale), radius=12, fill=CREAM, outline=INK, width=6)
+    draw.rounded_rectangle((x + 42 * scale, y + 48 * scale, x + 70 * scale, y + 120 * scale), radius=12, fill=CREAM, outline=INK, width=6)
 
 
-def _page_icon(buffer: bytearray, x: float, y: float, bars: float) -> None:
-    _panel(buffer, x, y, 200, 250, PAPER)
-    for index in range(3):
-        _fill(buffer, x + 28, y + 48 + index * 58, 144 * bars, 22, INK)
+def _camera(draw: ImageDraw.ImageDraw, x: float, y: float) -> None:
+    _round(draw, (x, y, x + 280, y + 180), BODY, 24)
+    draw.rounded_rectangle((x + 36, y - 28, x + 110, y + 8), radius=8, fill=BODY, outline=INK, width=6)
+    draw.ellipse((x + 90, y + 36, x + 190, y + 136), fill=AMBER, outline=INK, width=8)
+    draw.ellipse((x + 118, y + 64, x + 162, y + 108), fill=INK)
 
 
-def _folder_icon(buffer: bytearray, x: float, y: float) -> None:
-    _fill(buffer, x + 16, y, 70, 24, INK)
-    _panel(buffer, x, y + 16, 220, 150, FOLDER)
-    _text(buffer, "CASE FILE", x + 36, y + 70, 3, INK)
+def _page(draw: ImageDraw.ImageDraw, x: float, y: float, bars: float) -> None:
+    _round(draw, (x, y, x + 320, y + 400), PAPER, 18)
+    for index in range(4):
+        width = 220 if index == 3 else 240 * bars
+        draw.rounded_rectangle(
+            (x + 36, y + 48 + index * 78, x + 36 + width, y + 84 + index * 78),
+            radius=8,
+            fill=INK,
+        )
 
 
-def _overview(buffer: bytearray, progress: float) -> None:
-    _camera_icon(buffer, _slide(-220, 120, progress), 250)
-    _page_icon(buffer, _slide(1400, 920, progress), 200, _slide(0.15, 1, progress, 0.25))
-    _folder_icon(buffer, 520, _slide(620, 390, progress, 0.15))
-    _person(buffer, _slide(80, 250, progress, 0.2), 470)
-    _text(buffer, "EVIDENCE MOVES INTO THE FILE", 300, 640, 3, CREAM)
+def _folder(draw: ImageDraw.ImageDraw, x: float, y: float) -> None:
+    draw.rounded_rectangle((x + 24, y, x + 130, y + 36), radius=8, fill=INK)
+    _round(draw, (x, y + 24, x + 340, y + 230), FOLDER, 20)
+    draw.text((x + 48, y + 90), "CASE FILE", font=_font(36), fill=INK)
 
 
-def _porch(buffer: bytearray, progress: float) -> None:
-    _panel(buffer, 160, 180, 620, 400, WALL)
-    _fill(buffer, 160, 180, 620, 36, (168, 92, 64))
-    _panel(buffer, 390, 300, 160, 280, DOOR)
-    _circle(buffer, 520, 440, 8, AMBER)
-    _camera_icon(buffer, 250, _slide(80, 210, progress))
-    _person(buffer, 96, 470)
-    checks = ("TIME", "PLACE", "REAL")
+def _overview(draw: ImageDraw.ImageDraw, progress: float) -> None:
+    _camera(draw, _slide(-300, 180, progress), 360)
+    _page(draw, _slide(2000, 1380, progress), 280, _slide(0.2, 1, progress, 0.2))
+    _folder(draw, 760, _slide(980, 560, progress, 0.15))
+    _person(draw, _slide(80, 420, progress, 0.1), 620)
+    draw.text((520, 960), "Evidence moves into the file", font=_font(42), fill=CREAM)
+
+
+def _porch(draw: ImageDraw.ImageDraw, progress: float) -> None:
+    draw.polygon([(200, 430), (560, 230), (920, 430)], fill=(176, 84, 58), outline=INK)
+    _round(draw, (230, 400, 890, 860), WALL, 12)
+    _round(draw, (500, 520, 680, 860), DOOR, 10)
+    draw.ellipse((630, 670, 654, 694), fill=AMBER, outline=INK, width=4)
+    draw.rounded_rectangle((300, 470, 430, 580), radius=8, fill=(166, 206, 214), outline=INK, width=6)
+    draw.rounded_rectangle((700, 470, 830, 580), radius=8, fill=(166, 206, 214), outline=INK, width=6)
+    _camera(draw, 300, _slide(120, 250, progress))
+    _person(draw, 1100, 640)
+    checks = ("Time", "Place", "Real clip")
     for index, word in enumerate(checks):
-        y = 220 + index * 90
+        y = 300 + index * 130
         shown = _slide(0, 1, progress, 0.2 + index * 0.15, 0.2)
-        _panel(buffer, 860, y, 280, 70, PAPER)
-        _fill(buffer, 884, y + 18, 36, 36, GREEN if shown > 0.8 else NAVY_2)
-        _text(buffer, word, 940, y + 24, 3, INK)
+        _round(draw, (1280, y, 1780, y + 100), PAPER, 16)
+        mark = GREEN if shown > 0.8 else SKY
+        draw.rounded_rectangle((1310, y + 26, 1362, y + 78), radius=8, fill=mark, outline=INK, width=4)
+        draw.text((1390, y + 28), word, font=_font(36), fill=INK)
 
 
-def _document(buffer: bytearray, progress: float) -> None:
-    _page_icon(buffer, 220, 170, _slide(0.2, 1, progress, 0.1))
-    glass = _slide(980, 780, progress)
-    _circle(buffer, glass, 340, 78, (210, 230, 236))
-    _circle(buffer, glass, 340, 50, NAVY)
-    _text(buffer, "REDACTED", 760, 520, 4, CREAM)
-    _text(buffer, "PRIVACY STAYS COVERED", 700, 600, 3, AMBER)
+def _document(draw: ImageDraw.ImageDraw, progress: float) -> None:
+    _page(draw, 220, 240, _slide(0.25, 1, progress, 0.05))
+    glass = _slide(1500, 1180, progress)
+    draw.ellipse((glass - 110, 340, glass + 110, 560), fill=GLASS, outline=INK, width=10)
+    draw.ellipse((glass - 70, 380, glass + 70, 520), fill=SKY, outline=INK, width=8)
+    draw.line((glass + 70, 520, glass + 160, 640), fill=INK, width=16)
+    draw.text((1180, 760), "Redacted", font=_font(54), fill=CREAM)
+    draw.text((1180, 840), "Privacy stays covered", font=_font(36), fill=AMBER)
+    _person(draw, 1680, 640)
 
 
-def _merge(buffer: bytearray, progress: float) -> None:
-    _camera_icon(buffer, _slide(40, 300, progress), 280)
-    _page_icon(buffer, _slide(1040, 760, progress), 220, 1)
-    _folder_icon(buffer, 500, _slide(560, 400, progress, 0.2))
-    _fill(buffer, 300, 330, _slide(0, 200, progress, 0.35), 16, AMBER)
-    _fill(buffer, _slide(980, 760, progress, 0.35), 330, _slide(0, 200, progress, 0.35), 16, AMBER)
-    _text(buffer, "TWO RECORDS ONE FILE", 300, 640, 3, CREAM)
+def _merge(draw: ImageDraw.ImageDraw, progress: float) -> None:
+    _camera(draw, _slide(40, 360, progress), 380)
+    _page(draw, _slide(1700, 1240, progress), 300, 1)
+    _folder(draw, 760, _slide(900, 620, progress, 0.2))
+    draw.line((640, 470, _slide(640, 820, progress, 0.3), 470), fill=AMBER, width=14)
+    draw.line((_slide(1240, 1100, progress, 0.3), 470, 1240, 470), fill=AMBER, width=14)
+    draw.text((620, 960), "Two records, one file", font=_font(46), fill=CREAM)
 
 
-def _desk(buffer: bytearray, progress: float) -> None:
-    _panel(buffer, 180, 420, 920, 36, DOOR)
-    _fill(buffer, 220, 456, 840, 28, (72, 50, 34))
-    for index, word in enumerate(("NOTES", "CLIP", "FILE")):
-        x = 280 + index * 240
-        y = _slide(-180, 230, progress, index * 0.12, 0.4)
-        _panel(buffer, x, y, 180, 180, PAPER if index < 2 else FOLDER)
-        _text(buffer, word, x + 28, y + 78, 3, INK)
-    _text(buffer, "SORTED FOR REVIEW", 360, 640, 3, CREAM)
+def _desk(draw: ImageDraw.ImageDraw, progress: float) -> None:
+    draw.rounded_rectangle((180, 700, 1500, 760), radius=8, fill=DOOR, outline=INK, width=8)
+    draw.rectangle((240, 760, 1440, 800), fill=(72, 50, 34))
+    for index, word in enumerate(("Notes", "Clip", "File")):
+        x = 340 + index * 340
+        y = _slide(-220, 420, progress, index * 0.12, 0.4)
+        fill = PAPER if index < 2 else FOLDER
+        _round(draw, (x, y, x + 260, y + 260), fill, 16)
+        draw.text((x + 48, y + 100), word, font=_font(40), fill=INK)
+    _person(draw, 1680, 640)
+    draw.text((560, 960), "Sorted for review", font=_font(46), fill=CREAM)
 
 
-def _scale(buffer: bytearray, progress: float) -> None:
-    tilt = _slide(-18, 18, progress, 0.1, 0.8)
-    _panel(buffer, 460, 500, 360, 28, BODY)
-    _fill(buffer, 620, 250, 28, 250, AMBER)
-    _fill(buffer, 400, 250 + tilt, 480, 18, AMBER)
-    _panel(buffer, 390, 300 + tilt, 140, 22, PAPER)
-    _panel(buffer, 760, 268 - tilt * 0.4, 140, 22, PAPER)
-    _text(buffer, "ACCURACY", 390, 420, 3, CREAM)
-    _text(buffer, "PRIVACY", 760, 420, 3, CREAM)
-    _text(buffer, "KEEP THE BALANCE", 390, 640, 3, CREAM)
+def _scale(draw: ImageDraw.ImageDraw, progress: float) -> None:
+    tilt = _slide(-28, 28, progress, 0.1, 0.8)
+    draw.rounded_rectangle((760, 780, 1160, 830), radius=10, fill=BODY, outline=INK, width=8)
+    draw.rectangle((940, 360, 980, 790), fill=AMBER, outline=INK)
+    draw.polygon(
+        [(700, 390 + tilt), (1220, 360 - tilt * 0.3), (1220, 390 - tilt * 0.3), (700, 420 + tilt)],
+        fill=AMBER,
+        outline=INK,
+    )
+    _round(draw, (620, 430 + tilt, 860, 490 + tilt), PAPER, 12)
+    _round(draw, (1080, 390 - tilt * 0.3, 1320, 450 - tilt * 0.3), PAPER, 12)
+    draw.text((640, 520 + tilt), "Accuracy", font=_font(36), fill=CREAM)
+    draw.text((1100, 500 - tilt * 0.2), "Privacy", font=_font(36), fill=CREAM)
+    draw.text((700, 960), "Keep the balance", font=_font(48), fill=CREAM)
+    _person(draw, 280, 640)
