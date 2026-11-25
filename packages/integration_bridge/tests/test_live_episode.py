@@ -121,23 +121,10 @@ def test_find_blender_uses_the_BLENDER_variable(tmp_path: Path, monkeypatch):
     assert find_blender() == str(binary)
 
 
-def test_live_episode_renders_each_scene_in_blender(tmp_path: Path, monkeypatch):
+def test_live_episode_draws_a_moving_illustrated_scene(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek")
     monkeypatch.setenv("GEMINI_API_KEY", "gemini")
     spoken = _wav()
-    fake = tmp_path / "fake-blender"
-    fake.write_text(
-        "#!/usr/bin/env python3\n"
-        "import subprocess, sys\n"
-        "args = sys.argv[sys.argv.index('--') + 1:]\n"
-        "out = args[args.index('--out') + 1]\n"
-        "seconds = args[args.index('--seconds') + 1]\n"
-        "open(out + '.kit', 'w', encoding='utf8').write(args[args.index('--kit') + 1])\n"
-        "subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i',\n"
-        "f'color=c=0x1B3A4B:s=320x180:d={seconds}', '-r', '12', out], check=True)\n",
-        encoding="utf8",
-    )
-    fake.chmod(0o755)
 
     def post(url, headers, body, timeout):
         if "deepseek.com" in url:
@@ -151,14 +138,16 @@ def test_live_episode_renders_each_scene_in_blender(tmp_path: Path, monkeypatch)
     def ask(_message: str) -> str:
         raise AssertionError("picture prompt")
 
-    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask, blender_bin=str(fake))
-    script = (tmp_path / "blender" / "scene-2.py").read_text(encoding="utf8")
-    assert "BLENDER_WORKBENCH" in script
-    assert "to_track_quat" in script
-    assert 'media_type = "VIDEO"' in script
-    assert (tmp_path / "scene-2-picture.mp4.kit").read_text(encoding="utf8") == "porch"
-    assert receipt["renderer"] == "blender"
-    assert receipt["calls"]["blender_scenes"] == 6
+    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask)
+    frame = tmp_path / "frame.raw"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(tmp_path / "scene-2-picture.mp4"), "-vf", "select=eq(n\\,12)", "-vframes", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", str(frame)],
+        check=True,
+    )
+    pixels = frame.read_bytes()
+    assert max(pixels) - min(pixels) > 40
+    assert receipt["renderer"] == "infographic"
+    assert receipt["calls"]["infographic_scenes"] == 6
     assert receipt["calls"]["user_images"] == 0
     assert Path(receipt["master"]).is_file()
 

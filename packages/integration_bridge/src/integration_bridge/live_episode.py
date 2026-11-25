@@ -12,7 +12,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from integration_bridge.blender_scene import PICTURE_VERSION, choose_kit, find_blender, render_with_blender
+from integration_bridge.blender_scene import choose_kit
+from integration_bridge.infographic_motion import PICTURE_VERSION, render_infographic
 from integration_bridge.mvp_slice import REPO, screen_narration
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
@@ -71,7 +72,7 @@ def run_live(
     gemini = _key("GEMINI_API_KEY")
     transport = post or http_post
     ask = ask_image or _ask_image_path
-    blender = find_blender() if blender_bin is None else (blender_bin or None)
+    stills = blender_bin == ""
     out_dir.mkdir(parents=True, exist_ok=True)
     scenes = _saved_scenes(out_dir, topic)
     if scenes is None:
@@ -81,18 +82,16 @@ def run_live(
     else:
         print("Using the script already saved in this folder.", flush=True)
     brief_file = out_dir / "image-briefs.txt"
-    if blender:
-        print(
-            f"Blender is connected: {blender}\n"
-            "Each scene is a simple 3D picture. A MacBook Air needs a few minutes for each one.",
-            flush=True,
-        )
-    else:
+    if stills:
         briefs = [format_image_request(index, scene) for index, scene in enumerate(scenes, start=1)]
         brief_file.write_text("\n\n".join(briefs) + "\n", encoding="utf8")
         print(
-            "Blender is not installed, so you make the pictures.\n"
-            f"All {SCENE_COUNT} prompts are also saved in {brief_file}",
+            f"All {SCENE_COUNT} prompts are saved in {brief_file}",
+            flush=True,
+        )
+    else:
+        print(
+            "Drawing a moving illustrated scene for each line. The blocks from the last render are not used.",
             flush=True,
         )
     clips: list[Path] = []
@@ -105,14 +104,14 @@ def run_live(
             print(f"Scene {index} of {SCENE_COUNT}: speaking the line.", flush=True)
             voice.write_bytes(narrate(transport, gemini, scene["narration"]))
             spoken += 1
-        if blender:
-            picture = _blender_picture(blender, out_dir, index, scene, voice)
-            clip = out_dir / f"scene-{index}.mp4"
-            render_motion(picture, voice, clip, scene["heading"])
-        else:
+        if stills:
             image = take_picture(out_dir, index, scene, ask)
             clip = out_dir / f"scene-{index}.mp4"
             render_scene(image, voice, clip, scene["heading"])
+        else:
+            picture = _illustrated_picture(out_dir, index, scene, voice)
+            clip = out_dir / f"scene-{index}.mp4"
+            render_motion(picture, voice, clip, scene["heading"])
         clips.append(clip)
     master = out_dir / "master.mp4"
     print("Mixing the episode.", flush=True)
@@ -122,13 +121,14 @@ def run_live(
         "title": scenes[0]["heading"],
         "topic": topic,
         "scenes": [scene["heading"] for scene in scenes],
-        "renderer": "blender" if blender else "stills",
+        "renderer": "stills" if stills else "infographic",
         "calls": {
             "deepseek": 1,
             "gemini_image": 0,
             "gemini_tts": spoken,
-            "user_images": 0 if blender else SCENE_COUNT,
-            "blender_scenes": SCENE_COUNT if blender else 0,
+            "user_images": SCENE_COUNT if stills else 0,
+            "blender_scenes": 0,
+            "infographic_scenes": 0 if stills else SCENE_COUNT,
         },
         "master": str(master),
         "image_briefs": str(brief_file),
@@ -354,18 +354,18 @@ def narrate(post, api_key: str, text: str) -> bytes:
     return data
 
 
-def _blender_picture(binary: str, out_dir: Path, index: int, scene: dict, voice: Path) -> Path:
+def _illustrated_picture(out_dir: Path, index: int, scene: dict, voice: Path) -> Path:
     kit = choose_kit(scene)
     seconds = min(30.0, max(2.0, _duration(voice) + 0.25))
     picture = out_dir / f"scene-{index}-picture.mp4"
     stamp = picture.with_suffix(".stamp")
     fresh = stamp.is_file() and stamp.read_text(encoding="utf8").strip() == PICTURE_VERSION
     if fresh and _long_enough(picture) and _duration(picture) + 0.05 >= seconds:
-        print(f"Scene {index} of {SCENE_COUNT}: using the 3D picture already rendered.", flush=True)
+        print(f"Scene {index} of {SCENE_COUNT}: using the illustrated scene already drawn.", flush=True)
         return picture
-    print(f"Scene {index} of {SCENE_COUNT}: rendering the 3D picture in Blender ({kit}).", flush=True)
+    print(f"Scene {index} of {SCENE_COUNT}: drawing the illustrated scene ({kit}).", flush=True)
     try:
-        render_with_blender(binary, out_dir / "blender" / f"scene-{index}.py", picture, seconds, kit)
+        render_infographic(picture, seconds, kit, scene["heading"])
     except RuntimeError as exc:
         raise LiveError(str(exc)) from exc
     stamp.write_text(PICTURE_VERSION + "\n", encoding="utf8")
