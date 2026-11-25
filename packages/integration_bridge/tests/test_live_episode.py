@@ -105,6 +105,28 @@ def test_caption_is_drawn_when_drawtext_is_available(monkeypatch):
     assert "Synthetic voice and pictures" in text
 
 
+def test_delivery_encode_is_constant_quality_full_hd():
+    import integration_bridge.live_episode as live
+
+    args = live._delivery_video_args()
+    assert args[args.index("-crf") + 1] == "18"
+    assert "bt709" in args
+    assert "medium" in args
+    assert "1920:1080" in live._scene_filter("Porch")
+
+
+def test_cinematic_scene_script_is_full_hd_eevee():
+    import ast
+
+    from integration_bridge.blender_scene import SCENE_FILE
+
+    source = SCENE_FILE.read_text(encoding="utf8")
+    ast.parse(source)
+    assert "BLENDER_EEVEE" in source
+    assert "1920" in source
+    assert "ILLUSTRATIVE" in source
+
+
 def test_choose_kit_follows_the_scene_heading():
     assert choose_kit({"heading": "Synthetic Media Warning", "image_prompt": "a porch camera and a case file"}) == "overview"
     assert choose_kit({"heading": "The Porch Camera", "image_prompt": "a timeline"}) == "porch"
@@ -138,6 +160,7 @@ def test_live_episode_draws_a_moving_illustrated_scene(tmp_path: Path, monkeypat
     def ask(_message: str) -> str:
         raise AssertionError("picture prompt")
 
+    monkeypatch.setattr("integration_bridge.live_episode.find_blender", lambda: None)
     receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask)
     frame = tmp_path / "frame.raw"
     subprocess.run(

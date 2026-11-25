@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from integration_bridge.blender_scene import choose_kit
+from integration_bridge.blender_scene import CINEMATIC_VERSION, choose_kit, find_blender, render_with_blender
 from integration_bridge.infographic_motion import PICTURE_VERSION, render_infographic
 from integration_bridge.mvp_slice import REPO, screen_narration
 
@@ -90,8 +90,9 @@ def run_live(
             flush=True,
         )
     else:
+        picture_engine = "Blender" if (blender_bin or find_blender()) else "the illustrated fallback"
         print(
-            "Drawing a moving illustrated scene for each line. The blocks from the last render are not used.",
+            f"Building a cinematic scene for each line with {picture_engine}. Saved voices are reused.",
             flush=True,
         )
     clips: list[Path] = []
@@ -109,26 +110,27 @@ def run_live(
             clip = out_dir / f"scene-{index}.mp4"
             render_scene(image, voice, clip, scene["heading"])
         else:
-            picture = _illustrated_picture(out_dir, index, scene, voice)
+            picture = _moving_picture(out_dir, index, scene, voice, blender_bin)
             clip = out_dir / f"scene-{index}.mp4"
             render_motion(picture, voice, clip, scene["heading"])
         clips.append(clip)
     master = out_dir / "master.mp4"
     print("Mixing the episode.", flush=True)
     concat_scenes(clips, master)
+    used_blender = not stills and bool(blender_bin or find_blender())
     return {
         "mode": "live",
         "title": scenes[0]["heading"],
         "topic": topic,
         "scenes": [scene["heading"] for scene in scenes],
-        "renderer": "stills" if stills else "infographic",
+        "renderer": "stills" if stills else ("blender" if used_blender else "infographic"),
         "calls": {
             "deepseek": 1,
             "gemini_image": 0,
             "gemini_tts": spoken,
             "user_images": SCENE_COUNT if stills else 0,
-            "blender_scenes": 0,
-            "infographic_scenes": 0 if stills else SCENE_COUNT,
+            "blender_scenes": SCENE_COUNT if used_blender else 0,
+            "infographic_scenes": 0 if stills or used_blender else SCENE_COUNT,
         },
         "master": str(master),
         "image_briefs": str(brief_file),
@@ -354,6 +356,43 @@ def narrate(post, api_key: str, text: str) -> bytes:
     return data
 
 
+def _moving_picture(out_dir: Path, index: int, scene: dict, voice: Path, blender_bin: str | None) -> Path:
+    binary = blender_bin or find_blender()
+    if binary:
+        return _blender_picture(out_dir, index, scene, voice, binary)
+    return _illustrated_picture(out_dir, index, scene, voice)
+
+
+def _blender_picture(out_dir: Path, index: int, scene: dict, voice: Path, binary: str) -> Path:
+    kit = choose_kit(scene)
+    seconds = min(30.0, max(2.0, _duration(voice) + 0.25))
+    picture = out_dir / f"scene-{index}-picture.mp4"
+    stamp = picture.with_suffix(".stamp")
+    fresh = stamp.is_file() and stamp.read_text(encoding="utf8").strip() == CINEMATIC_VERSION
+    if fresh and _long_enough(picture) and _duration(picture) + 0.05 >= seconds:
+        print(f"Scene {index} of {SCENE_COUNT}: using the cinematic scene already rendered.", flush=True)
+        return picture
+    quality = os.environ.get("LIVE_QUALITY", "final").strip().lower()
+    preview = quality == "preview"
+    print(f"Scene {index} of {SCENE_COUNT}: rendering the cinematic scene in Blender ({kit}).", flush=True)
+    try:
+        render_with_blender(
+            binary,
+            picture,
+            seconds,
+            kit,
+            samples=12 if preview else 24,
+            fps=30,
+            width=1280 if preview else 1920,
+            height=720 if preview else 1080,
+            heading=str(scene.get("heading", "Scene")),
+        )
+    except RuntimeError as exc:
+        raise LiveError(str(exc)) from exc
+    stamp.write_text(CINEMATIC_VERSION + "\n", encoding="utf8")
+    return picture
+
+
 def _illustrated_picture(out_dir: Path, index: int, scene: dict, voice: Path) -> Path:
     kit = choose_kit(scene)
     seconds = min(30.0, max(2.0, _duration(voice) + 0.25))
@@ -393,8 +432,8 @@ def render_motion(video: Path, voice: Path, clip: Path, heading: str) -> None:
         "-t", f"{duration:.3f}",
         "-vf", _scene_filter(heading),
         "-r", "30",
-        "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "160k",
+        *_delivery_video_args(),
+        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "192k",
         "-shortest",
         str(clip),
     ]
@@ -413,8 +452,8 @@ def render_scene(image: Path, voice: Path, clip: Path, heading: str) -> None:
         "-t", f"{duration:.3f}",
         "-vf", video_filter,
         "-r", "30",
-        "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "160k",
+        *_delivery_video_args(),
+        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "192k",
         "-shortest",
         str(clip),
     ]
@@ -579,7 +618,10 @@ def _script_rules() -> str:
         "heading is at most 32 characters. narration is 2 or 3 spoken sentences, 20 to 60 words, with no stage directions. "
         f"The first narration begins with this sentence: {DISCLOSURE} "
         "Do not accuse a real private person of a crime. Do not explain how to commit a crime. "
-        "Do not mention a minor. image_prompt describes an editorial infographic with no photorealistic face, no gore, and no logo."
+        "Do not mention a minor. image_prompt is one sentence naming the place, the main object, "
+        "the shot size (wide, medium, or close), and the light (storm, desk lamp, or night). "
+        "Describe a cinematic documentary frame with a low horizon and a large subject. "
+        "No photorealistic face, no gore, and no logo."
     )
 
 
@@ -589,8 +631,23 @@ def _heading(value: str, index: int) -> str:
     return cleaned or f"Scene {index + 1}"
 
 
+def _delivery_video_args() -> list[str]:
+    """1080p H.264 at constant quality, tagged for a normal SDR television."""
+    return [
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-crf", "18",
+        "-profile:v", "high",
+        "-pix_fmt", "yuv420p",
+        "-colorspace", "bt709",
+        "-color_primaries", "bt709",
+        "-color_trc", "bt709",
+        "-movflags", "+faststart",
+    ]
+
+
 def _scene_filter(heading: str) -> str:
-    video_filter = "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080"
+    video_filter = "scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos,crop=1920:1080,setsar=1"
     font = _font()
     if font is None:
         return video_filter
