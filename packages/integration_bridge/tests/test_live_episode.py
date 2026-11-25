@@ -10,6 +10,7 @@ import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
+from integration_bridge.blender_scene import choose_kit, find_blender
 from integration_bridge.live_episode import (
     LiveError,
     _picture_file,
@@ -104,6 +105,63 @@ def test_caption_is_drawn_when_drawtext_is_available(monkeypatch):
     assert "Synthetic voice and pictures" in text
 
 
+def test_choose_kit_follows_the_scene_heading():
+    assert choose_kit({"heading": "Synthetic Media Warning", "image_prompt": "a porch camera and a case file"}) == "overview"
+    assert choose_kit({"heading": "The Porch Camera", "image_prompt": "a timeline"}) == "porch"
+    assert choose_kit({"heading": "The Redacted Statement", "image_prompt": "a page"}) == "document"
+    assert choose_kit({"heading": "Combining Evidence", "image_prompt": "arrows"}) == "merge"
+    assert choose_kit({"heading": "Building the Case File", "image_prompt": "tabs"}) == "desk"
+    assert choose_kit({"heading": "Ethical Considerations", "image_prompt": "a shield"}) == "scale"
+
+
+def test_find_blender_uses_the_BLENDER_variable(tmp_path: Path, monkeypatch):
+    binary = tmp_path / "Blender"
+    binary.write_text("binary", encoding="utf8")
+    monkeypatch.setenv("BLENDER", str(binary))
+    assert find_blender() == str(binary)
+
+
+def test_live_episode_renders_each_scene_in_blender(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek")
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini")
+    spoken = _wav()
+    fake = tmp_path / "fake-blender"
+    fake.write_text(
+        "#!/usr/bin/env python3\n"
+        "import subprocess, sys\n"
+        "args = sys.argv[sys.argv.index('--') + 1:]\n"
+        "out = args[args.index('--out') + 1]\n"
+        "seconds = args[args.index('--seconds') + 1]\n"
+        "open(out + '.kit', 'w', encoding='utf8').write(args[args.index('--kit') + 1])\n"
+        "subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i',\n"
+        "f'color=c=0x1B3A4B:s=320x180:d={seconds}', '-r', '12', out], check=True)\n",
+        encoding="utf8",
+    )
+    fake.chmod(0o755)
+
+    def post(url, headers, body, timeout):
+        if "deepseek.com" in url:
+            scenes = _scenes()
+            scenes[0]["heading"] = "Synthetic Media Warning"
+            scenes[1]["heading"] = "The Porch Camera"
+            return {"choices": [{"message": {"content": json.dumps({"scenes": scenes})}}]}
+        encoded = base64.b64encode(spoken).decode("ascii")
+        return {"steps": [{"type": "model_output", "content": [{"type": "audio", "mime_type": "audio/wav", "data": encoded}]}]}
+
+    def ask(_message: str) -> str:
+        raise AssertionError("picture prompt")
+
+    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask, blender_bin=str(fake))
+    script = (tmp_path / "blender" / "scene-2.py").read_text(encoding="utf8")
+    assert "BLENDER_EEVEE" in script
+    assert 'media_type = "VIDEO"' in script
+    assert (tmp_path / "scene-2-picture.mp4.kit").read_text(encoding="utf8") == "porch"
+    assert receipt["renderer"] == "blender"
+    assert receipt["calls"]["blender_scenes"] == 6
+    assert receipt["calls"]["user_images"] == 0
+    assert Path(receipt["master"]).is_file()
+
+
 def test_enter_keeps_a_picture_already_saved(tmp_path: Path):
     saved = tmp_path / "scene-1.png"
     saved.write_bytes(_png())
@@ -144,7 +202,7 @@ def test_live_episode_asks_for_each_picture_and_speaks_the_lines(tmp_path: Path,
         asked.append(message)
         return next(answers)
 
-    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask)
+    receipt = run_live(tmp_path, TOPIC, post=post, env_dir=tmp_path, ask_image=ask, blender_bin="")
     assert calls[0] == "deepseek-flash"
     assert calls.count("gemini-3.8-flash-tts") == 6
     assert "gemini-3.1-flash-lite-image" not in calls
