@@ -14,7 +14,7 @@ from integration_bridge.pipeline_run import workflow_report
 def main() -> int:
     parser = argparse.ArgumentParser(prog="python3 -m integration_bridge")
     parser.add_argument("--out", default="artifacts/offline-run", help="Directory for pipeline.db and master.mp4")
-    parser.add_argument("--live", action="store_true", help="Write the script with DeepSeek, render each scene in Blender, and speak the lines with Gemini.")
+    parser.add_argument("--live", action="store_true", help="Write the script with DeepSeek, draw a moving illustrated scene for each line, and speak with Gemini.")
     parser.add_argument("--topic", default="", help="Subject of the live episode.")
     args = parser.parse_args()
     out = Path(args.out)
