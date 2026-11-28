@@ -63,9 +63,9 @@ try:
     scene.view_settings.view_transform = "AgX"
 except TypeError:
     scene.view_settings.view_transform = "Filmic"
-scene.view_settings.exposure = -0.35
+scene.view_settings.exposure = -0.55
 try:
-    scene.view_settings.look = "AgX - High Contrast"
+    scene.view_settings.look = "AgX - Medium Contrast"
 except TypeError:
     pass
 
@@ -76,17 +76,17 @@ background = world.node_tree.nodes["Background"]
 sky = world.node_tree.nodes.new("ShaderNodeTexSky")
 try:
     sky.sky_type = "NISHITA"
-    sky.sun_elevation = math.radians(48)
-    sky.sun_rotation = math.radians(20)
-    sky.air_density = 3.0
-    sky.dust_density = 8.0
+    sky.sun_elevation = math.radians(36)
+    sky.sun_rotation = math.radians(50)
+    sky.air_density = 1.0
+    sky.dust_density = 1.6
     sky.ozone_density = 1.0
-    sky.sun_intensity = 0.04
+    sky.sun_intensity = 0.28
     sky.sun_disc = False
 except AttributeError:
     pass
 world.node_tree.links.new(sky.outputs["Color"], background.inputs["Color"])
-background.inputs["Strength"].default_value = 0.85
+background.inputs["Strength"].default_value = 0.55
 
 
 def set_input(node, names, value):
@@ -97,41 +97,67 @@ def set_input(node, names, value):
             return
 
 
-def material(name, color, rough=0.55, metal=0.0, emission=0.0, bump=0.0):
+def material(name, color, rough=0.55, metal=0.0, emission=0.0, bump=0.0, scale=6.0, variation=0.0, coat=0.0):
+    """A surface with grain. variation and bump keep a wall from reading as flat paint."""
     made = bpy.data.materials.new(name)
     made.use_nodes = True
-    node = made.node_tree.nodes["Principled BSDF"]
+    tree = made.node_tree
+    node = tree.nodes["Principled BSDF"]
     set_input(node, ("Base Color",), (*color, 1))
     set_input(node, ("Roughness",), rough)
     set_input(node, ("Metallic",), metal)
+    set_input(node, ("Specular IOR Level", "Specular"), 0.4)
+    set_input(node, ("Coat Weight",), coat)
     set_input(node, ("Emission Color", "Emission"), (*color, 1))
     set_input(node, ("Emission Strength",), emission)
+    if bump <= 0 and variation <= 0:
+        return made
+    noise = tree.nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = scale
+    noise.inputs["Detail"].default_value = 5.0
+    noise.inputs["Roughness"].default_value = 0.55
     if bump > 0:
-        noise = made.node_tree.nodes.new("ShaderNodeTexNoise")
-        noise.inputs["Scale"].default_value = 5.0
-        bump_node = made.node_tree.nodes.new("ShaderNodeBump")
+        bump_node = tree.nodes.new("ShaderNodeBump")
         bump_node.inputs["Strength"].default_value = bump
-        made.node_tree.links.new(noise.outputs["Fac"], bump_node.inputs["Height"])
-        made.node_tree.links.new(bump_node.outputs["Normal"], node.inputs["Normal"])
+        bump_node.inputs["Distance"].default_value = 0.015
+        tree.links.new(noise.outputs["Fac"], bump_node.inputs["Height"])
+        tree.links.new(bump_node.outputs["Normal"], node.inputs["Normal"])
+    if variation > 0:
+        mix = tree.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        darker = tuple(max(0.0, channel * (1.0 - variation)) for channel in color)
+        mix.inputs["A"].default_value = (*color, 1)
+        mix.inputs["B"].default_value = (*darker, 1)
+        tree.links.new(noise.outputs["Fac"], mix.inputs["Factor"])
+        tree.links.new(mix.outputs["Result"], node.inputs["Base Color"])
+        spread = tree.nodes.new("ShaderNodeMapRange")
+        spread.inputs["From Min"].default_value = 0.15
+        spread.inputs["From Max"].default_value = 0.85
+        spread.inputs["To Min"].default_value = max(0.03, rough * 0.7)
+        spread.inputs["To Max"].default_value = min(1.0, rough * 1.2)
+        tree.links.new(noise.outputs["Fac"], spread.inputs["Value"])
+        tree.links.new(spread.outputs["Result"], node.inputs["Roughness"])
     return made
 
 
-INK = material("Ink", (0.015, 0.016, 0.018), 0.45)
-WHITE = material("Title", (0.95, 0.95, 0.93), 0.4, emission=6.0)
-BONE = material("Bone", (0.72, 0.64, 0.46), 0.4)
-PAPER = material("Paper", (0.78, 0.74, 0.64), 0.82, bump=0.08)
-MANILA = material("Manila", (0.55, 0.40, 0.18), 0.72, bump=0.12)
-WOOD = material("Wood", (0.22, 0.13, 0.07), 0.48, bump=0.18)
-WALL = material("Siding", (0.62, 0.60, 0.56), 0.7, bump=0.05)
-TRIM = material("Trim", (0.28, 0.27, 0.25), 0.55)
-DOOR = material("Door", (0.28, 0.16, 0.09), 0.5, bump=0.1)
-METAL = material("Metal", (0.16, 0.17, 0.18), 0.28, metal=0.85)
-BRASS = material("Brass", (0.62, 0.46, 0.18), 0.32, metal=0.9)
-GLASS = material("Glass", (0.55, 0.68, 0.72), 0.08, metal=0.0)
-CLOTH = material("Cloth", (0.08, 0.09, 0.11), 0.85)
-GROUND = material("Concrete", (0.08, 0.085, 0.09), 0.9, bump=0.15)
-WARM = material("Lamp", (1.0, 0.72, 0.38), 0.4, emission=8.0)
-ROOF = material("Roof", (0.32, 0.16, 0.12), 0.62, bump=0.08)
+INK = material("Ink", (0.02, 0.02, 0.022), 0.4)
+WHITE = material("Title", (0.95, 0.95, 0.93), 0.4, emission=3.0)
+BONE = material("Bone", (0.72, 0.64, 0.46), 0.45)
+PAPER = material("Paper", (0.86, 0.83, 0.75), 0.78, bump=0.03, scale=40, variation=0.05)
+MANILA = material("Manila", (0.62, 0.46, 0.22), 0.7, bump=0.06, scale=12, variation=0.1)
+WOOD = material("Wood", (0.40, 0.26, 0.14), 0.52, bump=0.08, scale=14, variation=0.16)
+WALL = material("Siding", (0.62, 0.60, 0.57), 0.78, bump=0.06, scale=22, variation=0.07)
+TRIM = material("Trim", (0.32, 0.31, 0.29), 0.48, bump=0.02, scale=18, variation=0.04)
+DOOR = material("Door", (0.28, 0.15, 0.08), 0.46, bump=0.07, scale=16, variation=0.12)
+METAL = material("Metal", (0.22, 0.22, 0.23), 0.32, metal=1.0, bump=0.04, scale=18, variation=0.08)
+BRASS = material("Brass", (0.58, 0.42, 0.16), 0.28, metal=1.0, coat=0.15)
+WINDOW = material("Window", (0.16, 0.19, 0.21), 0.06, coat=0.35)
+GLASS = material("Glass", (0.55, 0.62, 0.64), 0.08, coat=0.2)
+CLOTH = material("Cloth", (0.16, 0.17, 0.19), 0.88, bump=0.04, scale=20, variation=0.06)
+ROOM = material("Room", (0.24, 0.23, 0.22), 0.84, bump=0.03, scale=8, variation=0.05)
+GROUND = material("Concrete", (0.45, 0.44, 0.42), 0.88, bump=0.06, scale=6, variation=0.06)
+WARM = material("Lamp", (1.0, 0.78, 0.48), 0.35, emission=12.0)
+ROOF = material("Roof", (0.12, 0.12, 0.13), 0.88, bump=0.08, scale=10, variation=0.08)
 
 
 def mesh(kind, name, location, size, surface, rotation=(0.0, 0.0, 0.0), bevel=0.012):
@@ -156,7 +182,10 @@ def mesh(kind, name, location, size, surface, rotation=(0.0, 0.0, 0.0), bevel=0.
         modifier.limit_method = "ANGLE"
         modifier.angle_limit = math.radians(40)
     obj.data.materials.append(surface)
-    bpy.ops.object.shade_smooth()
+    try:
+        bpy.ops.object.shade_auto_smooth(angle=math.radians(35))
+    except (AttributeError, TypeError, RuntimeError):
+        bpy.ops.object.shade_smooth()
     return obj
 
 
@@ -172,7 +201,7 @@ def light(kind, name, location, energy, color, size=1.2, rotation=(0.0, 0.0, 0.0
         if hasattr(lamp.data, "size_y"):
             lamp.data.size_y = size
     if kind == "SUN" and hasattr(lamp.data, "angle"):
-        lamp.data.angle = math.radians(3.5)
+        lamp.data.angle = math.radians(11)
     return lamp
 
 
@@ -327,6 +356,7 @@ look = (0.0, 0.0, 1.0)
 start = (2.4, -6.2, 2.2)
 end = (0.6, -4.0, 1.6)
 lens_mm = 40
+fstop = 8.0
 
 if kit == "porch":
     mesh("box", "House", (0, 1.15, 1.55), (6.4, 4.2, 3.1), WALL, bevel=0.02)
@@ -337,17 +367,19 @@ if kit == "porch":
     mesh("cyl", "Knob", (0.22, -1.04, 1.05), (0.06, 0.06, 0.04), BRASS, (math.radians(90), 0, 0), bevel=0.0)
     for side in (-1.7, 1.55):
         mesh("box", f"Window {side}", (side, -0.98, 1.85), (1.15, 0.06, 1.15), TRIM, bevel=0.008)
-        mesh("box", f"Pane {side}", (side, -1.02, 1.85), (0.92, 0.02, 0.92), GLASS, bevel=0.0)
+        mesh("box", f"Pane {side}", (side, -1.02, 1.85), (0.92, 0.02, 0.92), WINDOW, bevel=0.0)
     mesh("box", "Soffit", (2.35, -1.15, 2.55), (0.16, 0.7, 0.08), TRIM, bevel=0.004)
     camera_prop((2.35, -1.35, 2.35))
     mesh("sphere", "Porch bulb", (-2.4, -1.7, 2.55), (0.12, 0.12, 0.12), WARM, bevel=0.0)
     figure("Resident", (-1.55, -1.9, 0.2))
-    light("SUN", "Moon", (6, -4, 8), 0.45, (0.62, 0.72, 0.9), rotation=(math.radians(48), 0, math.radians(25)))
-    light("AREA", "Porch key", (-1.2, -2.6, 2.7), 180, (1.0, 0.78, 0.55), 1.4, (math.radians(-70), 0, 0))
-    light("AREA", "Rim", (3.5, 2.5, 3.2), 40, (0.45, 0.6, 0.85), 2.0)
-    look = (0.1, -1.1, 1.55)
-    start, end = (5.4, -10.2, 2.05), (2.4, -6.6, 1.55)
+    day = light("SUN", "Day", (8, -10, 9), 6.0, (1.0, 0.95, 0.86))
+    day.rotation_euler = (Vector((-2.2, 4.5, -6.0))).to_track_quat("-Z", "Z").to_euler()
+    light("AREA", "Sky", (-3, -8, 6), 8, (0.72, 0.8, 0.95), 4.0, (math.radians(-35), math.radians(-20), 0))
+    light("AREA", "Porch bulb", (-2.3, -2.0, 2.45), 25, (1.0, 0.62, 0.32), 0.22, (math.radians(-80), 0, 0))
+    look = (0.1, -1.1, 1.45)
+    start, end = (4.6, -9.4, 1.65), (2.2, -6.4, 1.5)
     lens_mm = 35
+    fstop = 11.0
 elif kit == "document":
     mesh("box", "Desk", (0, 0, 0.74), (2.4, 1.15, 0.08), WOOD, bevel=0.006)
     for x in (-1.0, 1.0):
@@ -373,12 +405,13 @@ elif kit == "document":
     mesh("cyl", "Lamp stem", (0.95, 0.35, 1.15), (0.025, 0.025, 0.55), METAL, bevel=0.0)
     mesh("roof", "Shade", (0.95, 0.28, 1.48), (0.28, 0.28, 0.22), METAL, (math.radians(180), 0, 0), bevel=0.004)
     mesh("sphere", "Bulb", (0.95, 0.28, 1.38), (0.08, 0.08, 0.08), WARM, bevel=0.0)
-    mesh("box", "Back wall", (0, 1.6, 1.6), (6.5, 0.12, 3.4), INK, bevel=0.0)
+    mesh("box", "Back wall", (0, 1.6, 1.6), (6.5, 0.12, 3.4), ROOM, bevel=0.0)
     light("AREA", "Desk lamp", (0.95, 0.15, 1.35), 90, (1.0, 0.75, 0.48), 0.45, (math.radians(70), 0, math.radians(-20)))
     light("AREA", "Fill", (-1.4, -1.2, 1.8), 12, (0.6, 0.7, 0.85), 1.2)
     look = (0.05, 0.05, 0.95)
     start, end = (1.7, -2.9, 1.9), (0.55, -2.2, 1.55)
-    lens_mm = 35
+    lens_mm = 50
+    fstop = 4.0
 elif kit == "merge":
     mesh("box", "Table", (0, 0, 0.72), (3.4, 1.4, 0.08), WOOD, bevel=0.008)
     camera_prop((-1.15, -0.05, 0.95))
@@ -388,7 +421,7 @@ elif kit == "merge":
     body.keyframe_insert("location", frame=1)
     body.location = (0, 0.05, 0.95)
     body.keyframe_insert("location", frame=scene.frame_end)
-    mesh("box", "Back wall", (0, 1.8, 1.5), (7, 0.1, 3.2), INK, bevel=0.0)
+    mesh("box", "Back wall", (0, 1.8, 1.5), (7, 0.1, 3.2), ROOM, bevel=0.0)
     light("AREA", "Key", (-1.5, -1.6, 2.4), 140, (1.0, 0.86, 0.7), 1.6, (math.radians(-55), 0, math.radians(-15)))
     light("AREA", "Rim", (2.2, 1.2, 2.2), 30, (0.45, 0.58, 0.8), 1.4)
     look = (0.1, 0.0, 0.9)
@@ -396,7 +429,7 @@ elif kit == "merge":
     lens_mm = 40
 elif kit == "desk":
     mesh("box", "Desk", (0, 0, 0.74), (3.2, 1.25, 0.08), WOOD, bevel=0.008)
-    mesh("box", "Wall", (0, 1.3, 1.7), (6.4, 0.1, 3.4), INK, bevel=0.0)
+    mesh("box", "Wall", (0, 1.3, 1.7), (6.4, 0.1, 3.4), ROOM, bevel=0.0)
     board = mesh("box", "Board", (0, 1.18, 1.85), (2.4, 0.04, 1.5), TRIM, bevel=0.006)
     mesh("box", "Pin A", (-0.45, 1.14, 2.15), (0.55, 0.01, 0.7), PAPER, bevel=0.002)
     mesh("box", "Pin B", (0.4, 1.14, 1.85), (0.55, 0.01, 0.55), PAPER, bevel=0.002)
@@ -409,7 +442,7 @@ elif kit == "desk":
     start, end = (2.6, -3.4, 1.9), (0.4, -2.5, 1.45)
     lens_mm = 35
 elif kit == "scale":
-    mesh("box", "Studio wall", (0, 2.2, 1.8), (8, 0.1, 4), INK, bevel=0.0)
+    mesh("box", "Studio wall", (0, 2.2, 1.8), (8, 0.1, 4), ROOM, bevel=0.0)
     mesh("box", "Plinth", (0, 0, 0.18), (1.6, 0.7, 0.28), TRIM, bevel=0.01)
     mesh("cyl", "Post", (0, 0, 1.15), (0.06, 0.06, 1.7), BRASS, bevel=0.0)
     rig = bpy.data.objects.new("ScaleRig", None)
@@ -426,14 +459,15 @@ elif kit == "scale":
     rig.keyframe_insert("rotation_euler", frame=1)
     rig.rotation_euler = (0, math.radians(8), 0)
     rig.keyframe_insert("rotation_euler", frame=scene.frame_end)
-    light("AREA", "Overhead", (0, -1.2, 3.4), 220, (1.0, 0.9, 0.78), 2.2, (math.radians(-28), 0, 0))
+    light("AREA", "Overhead", (0, -1.2, 3.4), 80, (1.0, 0.94, 0.86), 3.2, (math.radians(-28), 0, 0))
     light("AREA", "Edge", (-2.4, -1.6, 2.0), 40, (0.55, 0.66, 0.9), 1.4)
     look = (0, 0, 1.45)
     start, end = (3.4, -5.6, 2.35), (0.8, -4.2, 1.9)
-    lens_mm = 40
+    lens_mm = 50
+    fstop = 5.6
 else:
     mesh("box", "Table", (0, 0, 0.72), (3.6, 1.5, 0.08), WOOD, bevel=0.008)
-    mesh("box", "Wall", (0, 1.7, 1.6), (7.2, 0.1, 3.4), INK, bevel=0.0)
+    mesh("box", "Wall", (0, 1.7, 1.6), (7.2, 0.1, 3.4), ROOM, bevel=0.0)
     camera_prop((-1.2, 0.05, 0.98))
     page("Exhibit", (1.15, 0.0, 0.95), (math.radians(-66), 0, math.radians(6)))
     folder((-0.05, 0.05, 0.84))
@@ -448,13 +482,16 @@ else:
 bpy.ops.object.camera_add(location=start)
 camera = bpy.context.object
 scene.camera = camera
+camera.data.sensor_width = 36.0
 camera.data.lens = lens_mm
 camera.data.clip_start = 0.05
-camera.data.clip_end = 80
-camera.data.dof.use_dof = False
+camera.data.clip_end = 200
+camera.data.dof.use_dof = True
 focus = math.dist(end, look)
-camera.data.dof.focus_distance = max(0.4, focus)
-camera.data.dof.aperture_fstop = 2.8
+camera.data.dof.focus_distance = max(0.6, focus)
+camera.data.dof.aperture_fstop = fstop
+if hasattr(camera.data.dof, "aperture_blades"):
+    camera.data.dof.aperture_blades = 6
 track(camera, look)
 move(camera, start, 1)
 move(camera, end, scene.frame_end)

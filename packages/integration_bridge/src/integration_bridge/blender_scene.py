@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 KITS = ("overview", "porch", "document", "merge", "desk", "scale")
-CINEMATIC_VERSION = "1"
+CINEMATIC_VERSION = "2"
 SCENE_FILE = Path(__file__).with_name("cinematic_scene.py")
 
 
